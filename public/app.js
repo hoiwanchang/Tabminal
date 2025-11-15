@@ -264,12 +264,12 @@ function setStatus(state) {
         return;
     }
     const labels = {
-        connecting: '連線中',
-        connected: '已連線',
-        reconnecting: '重新連線',
-        terminated: '程序已結束',
-        ready: '可用',
-        unknown: '狀態未知'
+        connecting: 'Connecting',
+        connected: 'Connected',
+        reconnecting: 'Reconnecting',
+        terminated: 'Terminated',
+        ready: 'Ready',
+        unknown: 'Unknown'
     };
     statusEl.textContent = labels[state] ?? labels.unknown;
     statusEl.classList.add('visible');

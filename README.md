@@ -1,65 +1,65 @@
 # Tabminal
 
-Tabminal 是一個使用 Node.js、xterm.js 與 node-pty 打造的極簡網頁終端服務。後端僅啟動單一持久化的終端行程，瀏覽器端可以全螢幕佔據視窗，並支援自動重連、狀態提示與等比例縮放，確保刷新頁面後依然接續同一個 session。
+Tabminal is a minimalist web terminal service built with Node.js, xterm.js, and node-pty. The backend launches a single persistent terminal process. The browser client occupies the full screen and supports automatic reconnection, status indication, and proportional scaling, ensuring that the session continues even after refreshing the page.
 
-## 功能特點
+## Features
 
-- 🎯 **單一持久終端**：伺服器啟動時建立一個 node-pty 行程，任何瀏覽器連線都會接管同一個終端，刷新頁面不會重置環境。
-- ⚡ **低延遲串流**：WebSocket 直接雙向傳輸輸入/輸出資料，瀏覽器端利用 xterm.js 呈現即時結果。
-- 🪟 **自適應視窗**：終端佔滿整個瀏覽器可視區域，透過 `ResizeObserver` 與 xterm fit addon 自動調整列數與行數。
-- 🔄 **自動重連**：網路斷線或瀏覽器暫時睡眠後會於漸進式退避時間內自動重連，並重新套用終端尺寸。
-- 🧠 **輸出快取**：伺服器保存最近的輸出，新的瀏覽器連線會先重播快取內容再持續串流。
-- 📋 **健康檢查**：`/healthz` 端點可作為監控探針。
+- 🎯 **Single Persistent Terminal**: A node-pty process is created when the server starts. Any browser connection will take over the same terminal, and refreshing the page will not reset the environment.
+- ⚡ **Low Latency Streaming**: WebSocket directly transmits input/output data bi-directionally, and the browser uses xterm.js to render real-time results.
+- 🪟 **Adaptive Window**: The terminal occupies the entire browser visible area, automatically adjusting columns and rows via `ResizeObserver` and the xterm fit addon.
+- 🔄 **Auto Reconnection**: Automatically reconnects with progressive backoff after network disconnection or browser sleep, and reapplies terminal dimensions.
+- 🧠 **Output Caching**: The server saves recent output, and new browser connections will replay cached content before continuing to stream.
+- 📋 **Health Check**: The `/healthz` endpoint can be used as a monitoring probe.
 
-## 快速開始
+## Quick Start
 
 ```bash
 npm install
 npm run dev
 ```
 
-預設伺服器會在 `http://localhost:8080` 提供服務。`dev` 指令會使用 `node --watch` 以便於開發；若要以 production 模式啟動，請使用 `npm start`。
+The default server will be available at `http://localhost:8080`. The `dev` command uses `node --watch` for development; to start in production mode, use `npm start`.
 
-### 必要條件
+### Prerequisites
 
-- Node.js 18.18 或更新版本。
-- macOS / Linux 預設使用 `$SHELL`，Windows 則使用 `COMSPEC`（可自訂）。
+- Node.js 18.18 or newer.
+- macOS / Linux defaults to `$SHELL`, Windows uses `COMSPEC` (customizable).
 
-### 常用環境變數
+### Common Environment Variables
 
-| 變數 | 預設值 | 說明 |
+| Variable | Default | Description |
 | --- | --- | --- |
-| `PORT` | `9846` | HTTP 監聽埠 |
-| `HOST` | `0.0.0.0` | 綁定的位址 |
-| `TABMINAL_CWD` | 目前工作目錄 | 啟動終端的初始目錄 |
-| `TABMINAL_HISTORY` | `1048576` | 伺服器端輸出快取上限（字元） |
-| `TABMINAL_COLS` / `TABMINAL_ROWS` | `120` / `30` | 伺服器啟動時的預設終端尺寸 |
-| `TABMINAL_HEARTBEAT` | `30000` | WebSocket ping 週期（毫秒） |
+| `PORT` | `9846` | HTTP listening port |
+| `HOST` | `0.0.0.0` | Bind address |
+| `TABMINAL_CWD` | Current working directory | Initial directory for the terminal |
+| `TABMINAL_HISTORY` | `1048576` | Server-side output cache limit (characters) |
+| `TABMINAL_COLS` / `TABMINAL_ROWS` | `120` / `30` | Default terminal dimensions on server start |
+| `TABMINAL_HEARTBEAT` | `30000` | WebSocket ping interval (ms) |
 
-## 測試
+## Testing
 
 ```bash
 npm test
 ```
 
-測試使用 Vitest，並以虛擬的 pty/WS 實作驗證緩衝、寫入與尺寸調整的行為。若要持續開發可執行 `npm run test:watch`。
+Tests use Vitest and verify buffering, writing, and resizing behaviors with virtual pty/WS implementations. To continue development, run `npm run test:watch`.
 
-## 專案結構
+## Project Structure
 
 ```text
 src/
-  server.mjs              # HTTP + WebSocket 入口
-  terminal-session.mjs    # 封裝持久終端 session 與客戶端協定
+  server.mjs              # HTTP + WebSocket entry point
+  terminal-session.mjs    # Encapsulates persistent terminal session and client protocol
 public/
-  index.html              # xterm.js UI & 入口頁
-  app.js                  # 前端邏輯：重連、調整、狀態顯示
-  styles.css              # 全螢幕終端樣式
+  index.html              # xterm.js UI & entry page
+  app.js                  # Frontend logic: reconnection, resizing, status display
+  styles.css              # Full-screen terminal styles
 ```
 
-## 未來可以擴充的方向
+## Future Directions
 
-1. 多使用者／多 session 支援，以 token 區分不同 pty。
-2. 加入存取控制與 TLS 佈署腳本。
-3. 在伺服器端記錄審核日誌或操作歷史。
+1. Multi-user / Multi-session support, distinguishing different ptys by token.
+2. Add access control and TLS deployment scripts.
+3. Log audit logs or operation history on the server side.
 
-歡迎依需求調整設定或整合部署工具（systemd、Docker 等）。
+Feel free to adjust settings or integrate deployment tools (systemd, Docker, etc.) as needed.
