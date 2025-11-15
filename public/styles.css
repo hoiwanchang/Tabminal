@@ -66,6 +66,33 @@ body {
     background-color: rgba(38, 139, 210, 0.15);
 }
 
+.preview-container {
+    height: 90px; /* Fixed height for the preview */
+    background-color: var(--bg-base);
+    border-radius: 4px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    position: relative;
+}
+
+.preview-content {
+    font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
+    font-size: 10px; /* A small base font size */
+    line-height: 1.2;
+    white-space: pre;
+    color: var(--text-base);
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
+    /* Scale down to fit. The exact scale factor may need tweaking. */
+    /* Assuming a preview width of ~180px and a terminal of 120 cols */
+    transform: scale(0.2);
+    width: 500%; /* 1 / 0.2 */
+    height: 500%; /* 1 / 0.2 */
+}
+
+
 .tab-item .meta {
     font-size: 0.75rem;
     color: var(--text-muted);

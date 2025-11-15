@@ -213,11 +213,50 @@ function renderTabs() {
         tab.className = `tab-item ${session.id === state.activeSessionId ? 'active' : ''}`;
         tab.dataset.sessionId = session.id;
         tab.innerHTML = `
+            <div class="preview-container">
+                <pre class="preview-content"></pre>
+            </div>
             <div class="title">Terminal</div>
             <div class="meta">ID: ${session.id.substring(0, 8)}...</div>
             <div class="meta">Created: ${new Date(session.createdAt).toLocaleTimeString()}</div>
         `;
         tabListEl.appendChild(tab);
+    });
+}
+// #endregion
+
+// #region Preview WebSocket
+function connectPreviewSocket() {
+    const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+    const endpoint = `${protocol}://${window.location.host}/ws/previews`;
+    const socket = new WebSocket(endpoint);
+
+    socket.addEventListener('message', (event) => {
+        try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === 'previews') {
+                updatePreviews(payload.snapshots);
+            }
+        } catch (error) {
+            console.error('Preview Error:', error);
+        }
+    });
+
+    socket.addEventListener('close', () => {
+        // Reconnect after a short delay
+        setTimeout(connectPreviewSocket, 2000);
+    });
+}
+
+function updatePreviews(snapshots) {
+    snapshots.forEach(snapshot => {
+        const tabEl = tabListEl.querySelector(`[data-session-id="${snapshot.id}"]`);
+        if (tabEl) {
+            const preEl = tabEl.querySelector('.preview-content');
+            if (preEl) {
+                preEl.textContent = snapshot.screen;
+            }
+        }
     });
 }
 // #endregion
@@ -361,4 +400,7 @@ window.addEventListener('beforeunload', () => {
 // #endregion
 
 // Start the application
+
 initialize();
+
+connectPreviewSocket();

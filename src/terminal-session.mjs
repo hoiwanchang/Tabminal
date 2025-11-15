@@ -1,6 +1,54 @@
-const WS_STATE_OPEN = 1;
+import AnsiParser from 'node-ansiparser';
 
+const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
+
+class VirtualScreen {
+    constructor(cols, rows) {
+        this.cols = cols;
+        this.rows = rows;
+        this.buffer = Array(rows).fill(null).map(() => Array(cols).fill(' '));
+        this.x = 0;
+        this.y = 0;
+    }
+
+    _scrollUp() {
+        this.buffer.shift();
+        this.buffer.push(Array(this.cols).fill(' '));
+    }
+
+    print(char) {
+        if (this.x >= this.cols) {
+            this.x = 0;
+            this.y++;
+        }
+        if (this.y >= this.rows) {
+            this._scrollUp();
+            this.y = this.rows - 1;
+        }
+        this.buffer[this.y][this.x] = char;
+        this.x++;
+    }
+
+    resize(cols, rows) {
+        if (cols === this.cols && rows === this.rows) {
+            return;
+        }
+        // For simplicity, we just clear on resize. A more complex implementation
+        // could try to reflow the buffer.
+        this.cols = cols;
+        this.rows = rows;
+        this.buffer = Array(rows).fill(null).map(() => Array(cols).fill(' '));
+        this.x = 0;
+        this.y = 0;
+    }
+
+    getSnapshot() {
+        // Return a simple text representation for now.
+        // In the future, this could include color/style data.
+        return this.buffer.map(row => row.join('')).join('\n');
+    }
+}
 
 export class TerminalSession {
     constructor(pty, options = {}) {
@@ -15,11 +63,44 @@ export class TerminalSession {
         this.clients = new Set();
         this.closed = false;
 
+        this.screen = new VirtualScreen(pty.cols, pty.rows);
+        this.ansiParser = new AnsiParser({
+            inst_p: (text) => {
+                for (const char of text) {
+                    this.screen.print(char);
+                }
+            },
+            inst_o: (s) => { /* Unhandled */ },
+            inst_x: (flag) => { /* Unhandled */ },
+            inst_c: (collected, params, flag) => {
+                // For simplicity, we only handle basic cursor movements and clearing.
+                switch (flag) {
+                case 'H': // Cursor position
+                    this.screen.y = (params[0] ?? 1) - 1;
+                    this.screen.x = (params[1] ?? 1) - 1;
+                    break;
+                case 'J': // Erase screen
+                    if (params[0] === 2) { // Erase entire screen
+                        this.screen = new VirtualScreen(this.pty.cols, this.pty.rows);
+                    }
+                    break;
+                case 'm': // Graphics mode - could be used for colors later
+                    break;
+                }
+            },
+            inst_e: (collected, flag) => { /* Unhandled */ },
+            inst_d: (collected, params, flag) => { /* Unhandled */ },
+        });
+
         this._handleData = (chunk) => {
             if (typeof chunk !== 'string') {
                 chunk = chunk.toString('utf8');
             }
+            // Update both the raw history and the virtual screen
             this._appendHistory(chunk);
+            this.ansiParser.parse(chunk);
+
+            // Broadcast the raw output to active clients
             this._broadcast({ type: 'output', data: chunk });
         };
 
@@ -35,6 +116,15 @@ export class TerminalSession {
 
         this.dataSubscription = this.pty.onData(this._handleData);
         this.exitSubscription = this.pty.onExit(this._handleExit);
+    }
+
+    getSnapshot() {
+        return {
+            id: this.id,
+            createdAt: this.createdAt,
+            // In the future, we can add CWD, process name, etc.
+            screen: this.screen.getSnapshot()
+        };
     }
 
     attach(ws) {
@@ -106,6 +196,7 @@ export class TerminalSession {
         const safeRows = clampDimension(rows);
         if (safeCols && safeRows && this.pty.resize) {
             this.pty.resize(safeCols, safeRows);
+            this.screen.resize(safeCols, safeRows);
         }
     }
 
