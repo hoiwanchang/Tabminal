@@ -89,14 +89,34 @@ function shutdown(signal) {
     isShuttingDown = true;
     console.log(`Shutting down (${signal})...`);
     clearInterval(heartbeatInterval);
+    for (const socket of wss.clients) {
+        try {
+            socket.terminate();
+        } catch (_err) {
+            // ignore
+        }
+    }
     wss.close();
     session.dispose();
     try {
-        ptyProcess.kill();
+        ptyProcess.kill('SIGTERM');
     } catch (_err) {
         // ignore
     }
+    const forceExitTimer = setTimeout(() => {
+        console.warn('Forced shutdown after timeout.');
+        process.exit(1);
+    }, 5000).unref();
+    const hardKillTimer = setTimeout(() => {
+        try {
+            ptyProcess.kill('SIGKILL');
+        } catch (_err) {
+            // ignore
+        }
+    }, 2000).unref();
     httpServer.close(() => {
+        clearTimeout(forceExitTimer);
+        clearTimeout(hardKillTimer);
         process.exit(0);
     });
 }
