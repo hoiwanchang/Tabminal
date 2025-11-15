@@ -62,13 +62,9 @@ export class TerminalManager {
         return this.sessions.get(id);
     }
 
-    resizeAll(cols, rows) {
-        console.log(`[Manager] Resizing all sessions to ${cols}x${rows}`);
+    updateDefaultSize(cols, rows) {
         this.lastCols = cols;
         this.lastRows = rows;
-        for (const session of this.sessions.values()) {
-            session.resize(cols, rows);
-        }
     }
 
     removeSession(id) {
