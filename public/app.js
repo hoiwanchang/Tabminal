@@ -57,9 +57,8 @@ class Session {
             rows: 24, // Default, will be resized by fit addon or content
             cols: 80
         });
-        this.previewFitAddon = new FitAddon();
-        this.previewTerm.loadAddon(this.previewFitAddon);
         this.previewTerm.loadAddon(new CanvasAddon());
+        this.wrapperElement = null;
 
         // Main Terminal (Active View) - Created on demand or kept alive?
         // To ensure "live" switching without re-buffering, we keep it alive but unmounted.
@@ -107,10 +106,42 @@ class Session {
 
         // Handle resizing on main terminal
         this.mainTerm.onResize(size => {
+            this.previewTerm.resize(size.cols, size.rows);
+            this.updatePreviewScale();
             this.send({ type: 'resize', cols: size.cols, rows: size.rows });
         });
 
         this.connect();
+    }
+
+    updatePreviewScale() {
+        if (!this.wrapperElement) return;
+
+        // Wait for next frame to ensure xterm has rendered and calculated dimensions
+        requestAnimationFrame(() => {
+            if (!this.wrapperElement) return;
+            
+            // Get the actual width of the terminal content
+            // We can use the element's offsetWidth, but we need to ensure it's not constrained.
+            // Since wrapper has no width set, it should expand to fit content.
+            const termWidth = this.previewTerm.element.offsetWidth;
+            const termHeight = this.previewTerm.element.offsetHeight;
+            
+            if (termWidth === 0 || termHeight === 0) return;
+
+            const sidebarWidth = 200;
+            const padding = 20; // 10px padding on each side
+            const availableWidth = sidebarWidth - padding;
+
+            const scale = availableWidth / termWidth;
+
+            this.wrapperElement.style.width = `${termWidth}px`;
+            this.wrapperElement.style.height = `${termHeight}px`;
+            this.wrapperElement.style.transform = `scale(${scale})`;
+            
+            // Adjust container height to match scaled height
+            this.wrapperElement.parentElement.style.height = `${termHeight * scale}px`;
+        });
     }
 
     connect() {
@@ -313,8 +344,9 @@ function renderTabs() {
             tabListEl.appendChild(tab);
 
             // Mount the preview terminal
+            session.wrapperElement = wrapper;
             session.previewTerm.open(wrapper);
-            session.previewFitAddon.fit();
+            session.updatePreviewScale();
         }
 
         if (id === state.activeSessionId) {
