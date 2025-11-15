@@ -22,6 +22,7 @@ class Session {
         this.heartbeatInterval = null;
         this.heartbeatTimeout = null;
         this.awaitingPong = false;
+        this.isRestoring = false;
 
         // Preview Terminal (Sidebar)
         this.previewTerm = new Terminal({
@@ -97,6 +98,7 @@ class Session {
 
         // Hook up input on main terminal
         this.mainTerm.onData(data => {
+            if (this.isRestoring) return;
             this.send({ type: 'input', data });
         });
 
@@ -149,7 +151,12 @@ class Session {
                 this.previewTerm.reset();
                 this.mainTerm.reset();
                 this.history = message.data || '';
-                this.writeToTerminals(this.history);
+                
+                this.isRestoring = true;
+                this.previewTerm.write(this.history);
+                this.mainTerm.write(this.history, () => {
+                    this.isRestoring = false;
+                });
                 break;
             case 'output':
                 this.history += message.data;
