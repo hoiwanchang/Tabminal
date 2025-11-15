@@ -4,10 +4,9 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 
 import express from 'express';
-import pty from 'node-pty';
 import { WebSocketServer } from 'ws';
 
-import { TerminalSession } from './terminal-session.mjs';
+import { TerminalManager } from './terminal-manager.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -20,41 +19,53 @@ app.get('/healthz', (_req, res) => {
     res.json({ status: 'ok' });
 });
 
+// API routes for session management
+app.get('/api/sessions', (_req, res) => {
+    res.json(terminalManager.listSessions());
+});
+
+app.post('/api/sessions', (_req, res) => {
+    const session = terminalManager.createSession();
+    res.status(201).json({
+        id: session.id,
+        createdAt: session.createdAt
+    });
+});
+
 const httpServer = createServer(app);
-const wss = new WebSocketServer({
-    server: httpServer,
-    path: '/ws'
+const wss = new WebSocketServer({ noServer: true });
+
+const terminalManager = new TerminalManager();
+terminalManager.ensureOneSession();
+
+httpServer.on('upgrade', (request, socket, head) => {
+    // Use regex to extract session ID from URL, e.g., /ws/ca76660e-f5f3-4813-a340-3f334378d16f
+    const pathname = request.url;
+    const match = pathname.match(/^\/ws\/([a-zA-Z0-9-]+)$/);
+    if (!match) {
+        socket.destroy();
+        return;
+    }
+
+    const sessionId = match[1];
+    const session = terminalManager.getSession(sessionId);
+    if (!session) {
+        console.warn(`[Server] Session not found for ID: ${sessionId}`);
+        socket.destroy();
+        return;
+    }
+
+    wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, session);
+    });
 });
 
-const shell = resolveShell();
-const historyLimit = Number.parseInt(
-    process.env.TABMINAL_HISTORY ?? '',
-    10
-) || 1024 * 1024;
-const initialCols = Number.parseInt(
-    process.env.TABMINAL_COLS ?? '',
-    10
-) || 120;
-const initialRows = Number.parseInt(
-    process.env.TABMINAL_ROWS ?? '',
-    10
-) || 30;
-
-const ptyProcess = pty.spawn(shell, [], {
-    name: 'xterm-256color',
-    cols: initialCols,
-    rows: initialRows,
-    cwd: process.env.TABMINAL_CWD || process.cwd(),
-    env: process.env,
-    encoding: 'utf8'
-});
-const session = new TerminalSession(ptyProcess, { historyLimit });
-
-wss.on('connection', (socket) => {
+wss.on('connection', (socket, session) => {
     socket.isAlive = true;
     socket.on('pong', () => {
         socket.isAlive = true;
     });
+    console.log(`[Server] WebSocket connected to session ${session.id}`);
     session.attach(socket);
 });
 
@@ -89,44 +100,19 @@ function shutdown(signal) {
     isShuttingDown = true;
     console.log(`Shutting down (${signal})...`);
     clearInterval(heartbeatInterval);
-    for (const socket of wss.clients) {
-        try {
-            socket.terminate();
-        } catch (_err) {
-            // ignore
-        }
-    }
     wss.close();
-    session.dispose();
-    try {
-        ptyProcess.kill('SIGTERM');
-    } catch (_err) {
-        // ignore
-    }
+    terminalManager.dispose();
+
     const forceExitTimer = setTimeout(() => {
         console.warn('Forced shutdown after timeout.');
         process.exit(1);
     }, 5000).unref();
-    const hardKillTimer = setTimeout(() => {
-        try {
-            ptyProcess.kill('SIGKILL');
-        } catch (_err) {
-            // ignore
-        }
-    }, 2000).unref();
+
     httpServer.close(() => {
         clearTimeout(forceExitTimer);
-        clearTimeout(hardKillTimer);
         process.exit(0);
     });
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
-
-function resolveShell() {
-    if (process.platform === 'win32') {
-        return process.env.COMSPEC || 'cmd.exe';
-    }
-    return process.env.SHELL || '/bin/bash';
-}

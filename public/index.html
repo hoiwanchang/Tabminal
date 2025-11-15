@@ -8,8 +8,18 @@
         <link rel="stylesheet" href="./styles.css">
     </head>
     <body>
-        <main id="terminal" role="application" aria-label="Interactive Terminal"></main>
-        <div id="status-pill" role="status" aria-live="polite"></div>
+        <div class="app-layout">
+            <aside id="sidebar" class="sidebar">
+                <ul id="tab-list" class="tab-list">
+                    <!-- Tabs will be dynamically inserted here -->
+                </ul>
+                <button id="new-tab-button" class="new-tab-button" aria-label="New Terminal">+</button>
+            </aside>
+            <main id="terminal-container" class="terminal-container">
+                <div id="terminal" role="application" aria-label="Interactive Terminal"></div>
+                <div id="status-pill" role="status" aria-live="polite"></div>
+            </main>
+        </div>
         <script type="module" src="./app.js"></script>
     </body>
 </html>

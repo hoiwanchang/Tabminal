@@ -5,6 +5,8 @@ const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
 export class TerminalSession {
     constructor(pty, options = {}) {
         this.pty = pty;
+        this.id = options.id;
+        this.createdAt = options.createdAt ?? new Date();
         this.historyLimit = Math.max(
             1,
             options.historyLimit ?? DEFAULT_HISTORY_LIMIT

@@ -2,7 +2,13 @@
 
 :root {
     color-scheme: dark;
-    background-color: #002b36;
+    --bg-base: #002b36;
+    --bg-surface: #073642;
+    --text-base: #839496;
+    --text-muted: #586e75;
+    --text-highlight: #93a1a1;
+    --border-color: rgba(88, 110, 117, 0.5);
+    --accent-color: #268bd2;
 }
 
 * {
@@ -12,21 +18,103 @@
 body {
     margin: 0;
     font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, monospace;
-    background-color: #002b36;
-    color: #839496;
+    background-color: var(--bg-base);
+    color: var(--text-base);
     height: 100vh;
-    padding: 10px 0 10px 10px;
+    overflow: hidden; /* Prevent body scrollbars */
 }
 
-main#terminal {
+.app-layout {
+    display: flex;
+    height: 100%;
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 200px;
+    flex-shrink: 0;
+    background-color: var(--bg-base);
+    padding: 10px;
+    border-right: 1px solid var(--border-color);
+}
+
+.tab-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.tab-item {
+    padding: 12px 10px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: var(--bg-surface);
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.tab-item:hover {
+    background-color: rgba(88, 110, 117, 0.2);
+}
+
+.tab-item.active {
+    border-color: var(--accent-color);
+    background-color: rgba(38, 139, 210, 0.15);
+}
+
+.tab-item .meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tab-item .title {
+    font-size: 0.9rem;
+    color: var(--text-highlight);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.new-tab-button {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background-color: transparent;
+    color: var(--text-highlight);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.new-tab-button:hover {
+    background-color: var(--bg-surface);
+}
+
+.terminal-container {
+    flex-grow: 1;
+    position: relative;
+    padding: 10px 10px 10px 0;
+}
+
+#terminal {
     width: 100%;
     height: 100%;
 }
 
 #status-pill {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
     padding: 0.25rem 0.75rem;
     border-radius: 999px;
     font-size: 0.75rem;
