@@ -206,7 +206,11 @@ const connector = new TerminalConnector({
 });
 connector.reportResize(terminal.cols, terminal.rows);
 
+let isRestoring = false;
 terminal.onData((data) => {
+    if (isRestoring) {
+        return;
+    }
     connector.sendInput(data);
 });
 
@@ -234,7 +238,10 @@ function handleServerMessage(message) {
     case 'snapshot':
         terminal.reset();
         if (message.data) {
-            terminal.write(message.data);
+            isRestoring = true;
+            terminal.write(message.data, () => {
+                isRestoring = false;
+            });
         }
         break;
     case 'output':
