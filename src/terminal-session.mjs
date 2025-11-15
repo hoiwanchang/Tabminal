@@ -34,17 +34,30 @@ class VirtualScreen {
         this.x++;
     }
 
-    resize(cols, rows) {
-        if (cols === this.cols && rows === this.rows) {
+    resize(newCols, newRows) {
+        if (newCols === this.cols && newRows === this.rows) {
             return;
         }
-        // For simplicity, we just clear on resize. A more complex implementation
-        // could try to reflow the buffer.
-        this.cols = cols;
-        this.rows = rows;
-        this.buffer = Array(rows).fill(null).map(() => Array(cols).fill(' '));
-        this.x = 0;
-        this.y = 0;
+
+        const newBuffer = Array(newRows).fill(null).map(() => Array(newCols).fill(' '));
+
+        // Keep the cursor in view by shifting the content if necessary
+        const rowOffset = Math.max(0, this.y - newRows + 1);
+        const copyRows = Math.min(newRows, this.rows - rowOffset);
+        const copyCols = Math.min(newCols, this.cols);
+
+        for (let r = 0; r < copyRows; r++) {
+            const srcRow = r + rowOffset;
+            for (let c = 0; c < copyCols; c++) {
+                newBuffer[r][c] = this.buffer[srcRow][c];
+            }
+        }
+
+        this.cols = newCols;
+        this.rows = newRows;
+        this.buffer = newBuffer;
+        this.x = Math.min(this.x, this.cols - 1);
+        this.y = Math.max(0, this.y - rowOffset);
     }
 
     getSnapshot() {
