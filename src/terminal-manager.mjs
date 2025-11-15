@@ -26,14 +26,16 @@ const initialRows = Number.parseInt(
 export class TerminalManager {
     constructor() {
         this.sessions = new Map();
+        this.lastCols = initialCols;
+        this.lastRows = initialRows;
     }
 
     createSession() {
         const id = crypto.randomUUID();
         const ptyProcess = pty.spawn(resolveShell(), [], {
             name: 'xterm-256color',
-            cols: initialCols,
-            rows: initialRows,
+            cols: this.lastCols, // Use the last known size
+            rows: this.lastRows, // Use the last known size
             cwd: process.env.TABMINAL_CWD || process.cwd(),
             env: process.env,
             encoding: 'utf8'
@@ -52,7 +54,7 @@ export class TerminalManager {
         });
 
         this.sessions.set(id, session);
-        console.log(`[Manager] Created session ${id}`);
+        console.log(`[Manager] Created session ${id} with size ${this.lastCols}x${this.lastRows}`);
         return session;
     }
 
@@ -62,6 +64,8 @@ export class TerminalManager {
 
     resizeAll(cols, rows) {
         console.log(`[Manager] Resizing all sessions to ${cols}x${rows}`);
+        this.lastCols = cols;
+        this.lastRows = rows;
         for (const session of this.sessions.values()) {
             session.resize(cols, rows);
         }
