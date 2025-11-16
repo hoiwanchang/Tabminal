@@ -7,8 +7,8 @@
   "scripts": {
     "start": "node src/server.mjs",
     "dev": "node --watch src/server.mjs",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
     "lint": "eslint ."
   },
   "keywords": [
@@ -35,7 +35,6 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "vitest": "^4.0.9"
   },
   "repository": {
     "type": "git",

@@ -1,16 +1,25 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, it, beforeEach, afterEach, mock } from 'node:test';
+import assert from 'node:assert';
 
 import { TerminalSession } from '../src/terminal-session.mjs';
 
 describe('TerminalSession', () => {
     let pty;
+    let session;
 
     beforeEach(() => {
         pty = new FakePty();
+        session = null;
+    });
+
+    afterEach(() => {
+        if (session) {
+            session.dispose();
+        }
     });
 
     it('replays buffered output when a client attaches', () => {
-        const session = new TerminalSession(pty, { historyLimit: 16 });
+        session = new TerminalSession(pty, { historyLimit: 16 });
         pty.emitData('hello ');
         pty.emitData('world');
 
@@ -18,21 +27,18 @@ describe('TerminalSession', () => {
         session.attach(client);
 
         const payloads = client.sent.map((raw) => JSON.parse(raw));
-        expect(payloads[0]).toMatchObject({
-            type: 'snapshot',
-            data: 'hello world'
-        });
-        expect(payloads[1]).toMatchObject({
-            type: 'meta'
-        });
-        expect(payloads[2]).toMatchObject({
-            type: 'status',
-            status: 'ready'
-        });
+        
+        assert.strictEqual(payloads[0].type, 'snapshot');
+        assert.strictEqual(payloads[0].data, 'hello world');
+        
+        assert.strictEqual(payloads[1].type, 'meta');
+        
+        assert.strictEqual(payloads[2].type, 'status');
+        assert.strictEqual(payloads[2].status, 'ready');
     });
 
     it('writes user input to the underlying pty', () => {
-        const session = new TerminalSession(pty);
+        session = new TerminalSession(pty);
         const client = new MockSocket();
         session.attach(client);
 
@@ -41,11 +47,12 @@ describe('TerminalSession', () => {
             data: 'ls\n'
         }));
 
-        expect(pty.write).toHaveBeenCalledWith('ls\n');
+        assert.strictEqual(pty.write.mock.calls.length, 1);
+        assert.deepStrictEqual(pty.write.mock.calls[0].arguments, ['ls\n']);
     });
 
     it('resizes using sanitized values only', () => {
-        const session = new TerminalSession(pty);
+        session = new TerminalSession(pty);
         const client = new MockSocket();
         session.attach(client);
 
@@ -54,18 +61,19 @@ describe('TerminalSession', () => {
             cols: -5,
             rows: 'bad'
         }));
-        expect(pty.resize).not.toHaveBeenCalled();
+        assert.strictEqual(pty.resize.mock.calls.length, 0);
 
         client.emit('message', JSON.stringify({
             type: 'resize',
             cols: 200,
             rows: 40
         }));
-        expect(pty.resize).toHaveBeenCalledWith(200, 40);
+        assert.strictEqual(pty.resize.mock.calls.length, 1);
+        assert.deepStrictEqual(pty.resize.mock.calls[0].arguments, [200, 40]);
     });
 
     it('stops accepting input after the pty exits', () => {
-        const session = new TerminalSession(pty);
+        session = new TerminalSession(pty);
         const client = new MockSocket();
         session.attach(client);
 
@@ -75,34 +83,34 @@ describe('TerminalSession', () => {
             data: 'echo nope'
         }));
 
-        expect(pty.write).not.toHaveBeenCalled();
+        assert.strictEqual(pty.write.mock.calls.length, 0);
         const payloads = client.sent.map((raw) => JSON.parse(raw));
-        expect(payloads).toContainEqual({
-            type: 'status',
-            status: 'terminated',
-            code: 0,
-            signal: null
-        });
+        
+        const statusMsg = payloads.find(p => p.type === 'status' && p.status === 'terminated');
+        assert.ok(statusMsg, 'Should contain terminated status');
+        assert.strictEqual(statusMsg.code, 0);
+        assert.strictEqual(statusMsg.signal, null);
     });
 
     it('trims history to configured limit', () => {
-        const session = new TerminalSession(pty, { historyLimit: 10 });
+        session = new TerminalSession(pty, { historyLimit: 10 });
         pty.emitData('0123456789'); // fill
         pty.emitData('abcdef'); // push over
 
         const client = new MockSocket();
         session.attach(client);
         const payloads = client.sent.map((raw) => JSON.parse(raw));
-        expect(payloads[0]).toMatchObject({
-            data: '6789abcdef'
-        });
+        assert.strictEqual(payloads[0].data, '6789abcdef');
     });
 });
 
 class FakePty {
     constructor() {
-        this.write = vi.fn();
-        this.resize = vi.fn();
+        this.pid = 12345;
+        this.cols = 80;
+        this.rows = 24;
+        this.write = mock.fn();
+        this.resize = mock.fn();
         this._dataHandlers = new Set();
         this._exitHandlers = new Set();
     }
