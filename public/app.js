@@ -216,8 +216,22 @@ class Session {
         this.shouldReconnect = false;
         clearTimeout(this.retryTimer);
         this.socket?.close();
-        this.previewTerm.dispose();
-        this.mainTerm.dispose();
+        
+        try {
+            this.previewTerm.dispose();
+        } catch (e) {
+            if (!e.message?.includes('onRequestRedraw')) {
+                console.warn('Error disposing preview terminal:', e);
+            }
+        }
+        
+        try {
+            this.mainTerm.dispose();
+        } catch (e) {
+            if (!e.message?.includes('onRequestRedraw')) {
+                console.warn('Error disposing main terminal:', e);
+            }
+        }
     }
 }
 // #endregion
