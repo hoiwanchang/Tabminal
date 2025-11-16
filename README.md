@@ -18,7 +18,7 @@ npm install
 npm run dev
 ```
 
-The default server will be available at `http://localhost:8080`. The `dev` command uses `node --watch` for development; to start in production mode, use `npm start`.
+The default server will be available at `http://localhost:9846`. The `dev` command uses `node --watch` for development; to start in production mode, use `npm start`.
 
 ### Prerequisites
 

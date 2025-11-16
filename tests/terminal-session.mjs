@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { TerminalSession } from './terminal-session.mjs';
+import { TerminalSession } from '../src/terminal-session.mjs';
 
 describe('TerminalSession', () => {
     let pty;
