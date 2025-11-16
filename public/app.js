@@ -303,6 +303,8 @@ function removeSession(id) {
 function renderTabs() {
     if (!tabListEl) return;
 
+    const newTabItem = document.getElementById('new-tab-item');
+
     // Remove tabs that are no longer in state
     const tabElements = tabListEl.querySelectorAll('.tab-item');
     for (const el of tabElements) {
@@ -316,7 +318,11 @@ function renderTabs() {
         let tab = tabListEl.querySelector(`[data-session-id="${id}"]`);
         if (!tab) {
             tab = createTabElement(session);
-            tabListEl.appendChild(tab);
+            if (newTabItem) {
+                tabListEl.insertBefore(tab, newTabItem);
+            } else {
+                tabListEl.appendChild(tab);
+            }
             
             // Mount preview
             session.wrapperElement = tab.querySelector('.preview-terminal-wrapper');
