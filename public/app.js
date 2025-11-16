@@ -53,8 +53,8 @@ class Session {
             allowTransparency: true,
             convertEol: true,
             cursorBlink: true,
-            fontFamily: 'JetBrains Mono, SFMono-Regular, Menlo, monospace',
-            fontSize: 14,
+            fontFamily: '"SF Mono Terminal", "SFMono-Regular", "SF Mono", Menlo, Consolas, monospace',
+            fontSize: 12,
             rows: this.rows,
             cols: this.cols,
             theme: { background: '#002b36', foreground: '#839496', cursor: '#93a1a1', cursorAccent: '#002b36', selectionBackground: '#073642' }
