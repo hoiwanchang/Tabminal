@@ -119,8 +119,21 @@ export class TerminalSession {
 
                 // If we found a descendant
                 if (currentPid !== this.pty.pid) {
-                    const { stdout: commOut } = await execAsync(`ps -o comm= -p ${currentPid}`);
-                    const newTitle = commOut.trim().split('/').pop();
+                    const { stdout: argsOut } = await execAsync(`ps -o args= -p ${currentPid}`);
+                    let newTitle = argsOut.trim();
+                    
+                    // If the command starts with a path, use the basename
+                    // e.g. "/usr/bin/vim file.txt" -> "vim file.txt"
+                    const firstSpaceIndex = newTitle.indexOf(' ');
+                    if (firstSpaceIndex > 0) {
+                        const cmd = newTitle.substring(0, firstSpaceIndex);
+                        const args = newTitle.substring(firstSpaceIndex);
+                        if (cmd.includes('/')) {
+                            newTitle = cmd.split('/').pop() + args;
+                        }
+                    } else if (newTitle.includes('/')) {
+                        newTitle = newTitle.split('/').pop();
+                    }
                     
                     if (newTitle && newTitle !== this.title) {
                         this.title = newTitle;
