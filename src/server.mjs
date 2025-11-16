@@ -2,6 +2,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
+import net from 'node:net';
 
 import Koa from 'koa';
 import serve from 'koa-static';
@@ -10,6 +11,7 @@ import { WebSocketServer } from 'ws';
 
 import { TerminalManager } from './terminal-manager.mjs';
 import { SystemMonitor } from './system-monitor.mjs';
+import { config } from './config.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -68,7 +70,6 @@ httpServer.on('upgrade', (request, socket, head) => {
     const pathname = request.url;
 
     if (pathname.startsWith('/ws/')) {
-        // Use regex to extract session ID from URL, e.g., /ws/ca76660e-f5f3-4813-a340-3f334378d16f
         const match = pathname.match(/^\/ws\/([a-zA-Z0-9-]+)$/);
         if (!match) {
             socket.destroy();
@@ -100,11 +101,6 @@ wss.on('connection', (socket, session) => {
     session.attach(socket);
 });
 
-const heartbeatIntervalMs = Number.parseInt(
-    process.env.TABMINAL_HEARTBEAT ?? '',
-    10
-) || 30000;
-
 const heartbeatInterval = setInterval(() => {
     for (const socket of wss.clients) {
         if (socket.isAlive === false) {
@@ -114,14 +110,40 @@ const heartbeatInterval = setInterval(() => {
         socket.isAlive = false;
         socket.ping();
     }
-}, heartbeatIntervalMs).unref();
+}, config.heartbeatInterval).unref();
 
-const port = Number.parseInt(process.env.PORT ?? '', 10) || 9846;
-const host = process.env.HOST || '0.0.0.0';
-httpServer.listen(port, host, () => {
-    const urlHost = host === '0.0.0.0' ? 'localhost' : host;
-    console.log(`Tabminal listening on http://${urlHost}:${port}`);
-});
+// Port hunting logic
+function findAvailablePort(startPort, host) {
+    return new Promise((resolve, reject) => {
+        const server = net.createServer();
+        server.unref();
+        server.on('error', (err) => {
+            if (err.code === 'EADDRINUSE') {
+                resolve(findAvailablePort(startPort + 1, host));
+            } else {
+                reject(err);
+            }
+        });
+        server.listen(startPort, host, () => {
+            server.close(() => {
+                resolve(startPort);
+            });
+        });
+    });
+}
+
+(async () => {
+    try {
+        const port = await findAvailablePort(config.port, config.host);
+        httpServer.listen(port, config.host, () => {
+            const urlHost = config.host === '0.0.0.0' ? 'localhost' : config.host;
+            console.log(`Tabminal listening on http://${urlHost}:${port}`);
+        });
+    } catch (err) {
+        console.error('Failed to start server:', err);
+        process.exit(1);
+    }
+})();
 
 let isShuttingDown = false;
 function shutdown(signal) {

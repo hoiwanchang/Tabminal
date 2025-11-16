@@ -124,3 +124,4 @@ dist
 # Tabminal specific
 debug_*.mjs
 *.png
+config.json

@@ -1,0 +1,14 @@
+# Source and Tests
+src/
+tests/
+.history/
+
+# Configuration
+config.json
+.gitignore
+.npmignore
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.pid
