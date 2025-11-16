@@ -21,7 +21,7 @@ const publicDir = path.join(__dirname, '..', 'public');
 const app = new Koa();
 const router = new Router();
 
-if (!config.acceptedSecurityWarning) {
+if (!config.acceptTerms) {
     console.error(`
 [SECURITY WARNING]
 Please confirm you are running this service in a trusted environment.
@@ -29,7 +29,7 @@ You should use a secure tunnel like Cloudflare Zero Trust or Tailscale for remot
 Do NOT expose this service's port directly to the public internet.
 
 You acknowledge and understand these risks.
-To start the service, use the '-y' flag or set 'acceptedSecurityWarning: true' in your config.
+To start the service, use the '-y' flag or set 'acceptTerms: true' in your config.
     `);
     process.exit(1);
 }

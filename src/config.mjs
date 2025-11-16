@@ -9,7 +9,7 @@ const DEFAULT_CONFIG = {
     port: 9846,
     heartbeatInterval: 30000,
     historyLimit: 524288,
-    acceptedSecurityWarning: false,
+    acceptTerms: false,
     password: null
 };
 
@@ -102,7 +102,7 @@ Options:
         }
     }
     if (args.yes) {
-        finalConfig.acceptedSecurityWarning = true;
+        finalConfig.acceptTerms = true;
     }
     if (args.passwd) {
         finalConfig.password = args.passwd;
