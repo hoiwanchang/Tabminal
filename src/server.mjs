@@ -38,6 +38,12 @@ app.post('/api/sessions', (_req, res) => {
     });
 });
 
+app.delete('/api/sessions/:id', (req, res) => {
+    const { id } = req.params;
+    terminalManager.removeSession(id);
+    res.status(204).send();
+});
+
 const httpServer = createServer(app);
 const wss = new WebSocketServer({ noServer: true });
 

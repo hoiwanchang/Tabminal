@@ -338,6 +338,12 @@ function createTabElement(session) {
     tab.className = 'tab-item';
     tab.dataset.sessionId = session.id;
     
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'close-tab-button';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.title = 'Close Terminal';
+    tab.appendChild(closeBtn);
+    
     const previewContainer = document.createElement('div');
     previewContainer.className = 'preview-container';
     
@@ -437,6 +443,46 @@ function shortenPath(path) {
 }
 // #endregion
 
+async function closeSession(id) {
+    try {
+        await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+        // The heartbeat will eventually sync the removal, but for better UX we can handle the UI update immediately
+        // or just wait for the sync.
+        // However, the requirement says: "If the closed session is the current one... select the previous one..."
+        // We should handle the selection logic locally before or after the delete.
+        
+        const sessionIds = Array.from(state.sessions.keys());
+        const index = sessionIds.indexOf(id);
+        
+        if (state.activeSessionId === id) {
+            let nextId = null;
+            if (index > 0) {
+                nextId = sessionIds[index - 1];
+            } else if (index < sessionIds.length - 1) {
+                nextId = sessionIds[index + 1];
+            }
+            
+            if (nextId) {
+                switchToSession(nextId);
+            } else {
+                // No sessions left after this one is gone.
+                // The backend might auto-create one, or we might need to trigger it.
+                // If we rely on syncSessions, it will see 0 sessions and create one.
+                // But let's be proactive.
+                state.activeSessionId = null;
+                terminalEl.innerHTML = '';
+            }
+        }
+        
+        // We can optimistically remove it from the map, but the heartbeat is the source of truth.
+        // Let's just trigger a sync immediately after the delete returns.
+        await syncSessions();
+        
+    } catch (error) {
+        console.error('Failed to close session:', error);
+    }
+}
+
 // #region Initialization & Event Listeners
 const resizeObserver = new ResizeObserver(() => {
     if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
@@ -448,6 +494,16 @@ const resizeObserver = new ResizeObserver(() => {
 resizeObserver.observe(terminalEl);
 
 tabListEl.addEventListener('click', (event) => {
+    const closeBtn = event.target.closest('.close-tab-button');
+    if (closeBtn) {
+        event.stopPropagation(); // Prevent switching to the tab we are closing
+        const tabItem = closeBtn.closest('.tab-item');
+        if (tabItem) {
+            closeSession(tabItem.dataset.sessionId);
+        }
+        return;
+    }
+
     const tabItem = event.target.closest('.tab-item');
     if (tabItem) {
         switchToSession(tabItem.dataset.sessionId);
