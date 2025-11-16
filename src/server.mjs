@@ -20,7 +20,7 @@ app.get('/healthz', (_req, res) => {
 });
 
 // API routes for session management
-app.get('/api/sessions', (_req, res) => {
+app.get('/api/heartbeat', (_req, res) => {
     res.json(terminalManager.listSessions());
 });
 

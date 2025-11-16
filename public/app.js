@@ -10,7 +10,11 @@ const tabListEl = document.getElementById('tab-list');
 const newTabButton = document.getElementById('new-tab-button');
 // #endregion
 
-// #region Session Management
+// #region Configuration
+const HEARTBEAT_INTERVAL_MS = 1000;
+// #endregion
+
+// #region Session Class
 class Session {
     constructor(data) {
         this.id = data.id;
@@ -20,7 +24,7 @@ class Session {
         
         this.title = data.title || this.shell.split('/').pop();
         this.cwd = data.cwd || this.initialCwd;
-        this.env = data.env || ''; // Initialize from API
+        this.env = data.env || '';
         this.cols = data.cols || 80;
         this.rows = data.rows || 24;
 
@@ -29,11 +33,9 @@ class Session {
         this.reconnectAttempts = 0;
         this.shouldReconnect = true;
         this.retryTimer = null;
-        this.heartbeatInterval = null;
-        this.heartbeatTimeout = null;
-        this.awaitingPong = false;
         this.isRestoring = false;
 
+        // Preview Terminal (Canvas renderer for performance)
         this.previewTerm = new Terminal({
             disableStdin: true,
             cursorBlink: false,
@@ -46,6 +48,7 @@ class Session {
         this.previewTerm.loadAddon(new CanvasAddon());
         this.wrapperElement = null;
 
+        // Main Terminal
         this.mainTerm = new Terminal({
             allowTransparency: true,
             convertEol: true,
@@ -62,6 +65,7 @@ class Session {
         this.mainTerm.loadAddon(this.mainLinksAddon);
         this.mainTerm.loadAddon(new CanvasAddon());
 
+        // Event Listeners
         this.mainTerm.onData(data => {
             if (this.isRestoring) return;
             this.send({ type: 'input', data });
@@ -74,6 +78,25 @@ class Session {
         });
 
         this.connect();
+    }
+
+    update(data) {
+        let changed = false;
+        if (data.title && data.title !== this.title) {
+            this.title = data.title;
+            changed = true;
+        }
+        if (data.cwd && data.cwd !== this.cwd) {
+            this.cwd = data.cwd;
+            changed = true;
+        }
+        if (data.env && data.env !== this.env) {
+            this.env = data.env;
+            changed = true;
+        }
+        if (changed) {
+            this.updateTabUI();
+        }
     }
 
     updatePreviewScale() {
@@ -100,7 +123,7 @@ class Session {
         if (!tab) return;
 
         if (this.env) {
-            tab.title = this.env; // Set tooltip on the main tab element
+            tab.title = this.env;
         }
 
         const titleEl = tab.querySelector('.title');
@@ -121,7 +144,6 @@ class Session {
 
         this.socket.addEventListener('open', () => {
             this.reconnectAttempts = 0;
-            this.startHeartbeat();
             if (state.activeSessionId === this.id) this.reportResize();
         });
 
@@ -132,7 +154,6 @@ class Session {
         });
 
         this.socket.addEventListener('close', () => {
-            this.stopHeartbeat();
             if (this.shouldReconnect) {
                 const wait = Math.min(5000, 500 * 2 ** this.reconnectAttempts);
                 this.reconnectAttempts++;
@@ -156,20 +177,12 @@ class Session {
                 this.writeToTerminals(message.data);
                 break;
             case 'meta':
-                if (message.title) this.title = message.title;
-                if (message.cwd) this.cwd = message.cwd;
-                if (message.env) this.env = message.env; // Update env from message
-                this.updateTabUI();
-                break;
-            case 'pong':
-                this.awaitingPong = false;
+                this.update(message);
                 break;
             case 'status':
                 if (state.activeSessionId === this.id) setStatus(message.status);
-                if (message.status === 'terminated') {
-                    this.dispose();
-                    removeSession(this.id);
-                }
+                // Note: We don't removeSession here anymore; we let the heartbeat handle it.
+                // But if the socket says 'terminated', we can mark it.
                 break;
         }
     }
@@ -191,62 +204,86 @@ class Session {
         }
     }
 
-    startHeartbeat() {
-        this.stopHeartbeat();
-        this.heartbeatInterval = setInterval(() => {
-            if (this.awaitingPong) return;
-            this.send({ type: 'ping' });
-            this.awaitingPong = true;
-            this.heartbeatTimeout = setTimeout(() => {
-                if (this.awaitingPong) this.socket?.close();
-            }, 5000);
-        }, 10000);
-    }
-
-    stopHeartbeat() {
-        clearInterval(this.heartbeatInterval);
-        clearTimeout(this.heartbeatTimeout);
-        this.heartbeatInterval = null;
-        this.heartbeatTimeout = null;
-        this.awaitingPong = false;
-    }
-
     dispose() {
         this.shouldReconnect = false;
-        this.stopHeartbeat();
         clearTimeout(this.retryTimer);
         this.socket?.close();
         this.previewTerm.dispose();
         this.mainTerm.dispose();
     }
 }
+// #endregion
 
+// #region State Management
 const state = {
     sessions: new Map(), // Map<id, Session>
     activeSessionId: null
 };
-// #endregion
 
-// #region API Functions
-async function fetchSessions() {
+async function syncSessions() {
     try {
-        const response = await fetch('/api/sessions');
-        if (!response.ok) throw new Error('Failed to fetch sessions');
-        return await response.json();
+        const response = await fetch('/api/heartbeat');
+        if (!response.ok) return;
+        const remoteSessions = await response.json();
+        reconcileSessions(remoteSessions);
     } catch (error) {
-        console.error('API Error:', error);
-        return [];
+        console.error('Heartbeat failed:', error);
     }
+}
+
+function reconcileSessions(remoteSessions) {
+    const remoteIds = new Set(remoteSessions.map(s => s.id));
+    const localIds = new Set(state.sessions.keys());
+
+    // 1. Remove stale sessions
+    for (const id of localIds) {
+        if (!remoteIds.has(id)) {
+            removeSession(id);
+        }
+    }
+
+    // 2. Add new sessions or update existing
+    for (const data of remoteSessions) {
+        if (state.sessions.has(data.id)) {
+            state.sessions.get(data.id).update(data);
+        } else {
+            const session = new Session(data);
+            state.sessions.set(session.id, session);
+            // If this is the first session, activate it
+            if (!state.activeSessionId) {
+                switchToSession(session.id);
+            }
+        }
+    }
+
+    // 3. Ensure active session is valid
+    if (state.activeSessionId && !state.sessions.has(state.activeSessionId)) {
+        state.activeSessionId = null;
+        if (state.sessions.size > 0) {
+            switchToSession(state.sessions.keys().next().value);
+        } else {
+            terminalEl.innerHTML = '';
+        }
+    }
+
+    renderTabs();
 }
 
 async function createNewSession() {
     try {
-        const response = await fetch('/api/sessions', { method: 'POST' });
-        if (!response.ok) throw new Error('Failed to create session');
-        return await response.json();
+        await fetch('/api/sessions', { method: 'POST' });
+        // Immediate sync to reflect the new session
+        await syncSessions();
     } catch (error) {
-        console.error('API Error:', error);
-        return null;
+        console.error('Failed to create session:', error);
+    }
+}
+
+function removeSession(id) {
+    const session = state.sessions.get(id);
+    if (session) {
+        session.dispose();
+        state.sessions.delete(id);
     }
 }
 // #endregion
@@ -255,16 +292,11 @@ async function createNewSession() {
 function renderTabs() {
     if (!tabListEl) return;
 
-    const existingTabIds = new Set(
-        [...tabListEl.querySelectorAll('.tab-item')].map(el => el.dataset.sessionId)
-    );
-    const currentSessionIds = new Set(state.sessions.keys());
-
-    // Remove old tabs
-    for (const tabId of existingTabIds) {
-        if (!currentSessionIds.has(tabId)) {
-            const tab = tabListEl.querySelector(`[data-session-id="${tabId}"]`);
-            tab?.remove();
+    // Remove tabs that are no longer in state
+    const tabElements = tabListEl.querySelectorAll('.tab-item');
+    for (const el of tabElements) {
+        if (!state.sessions.has(el.dataset.sessionId)) {
+            el.remove();
         }
     }
 
@@ -272,63 +304,13 @@ function renderTabs() {
     for (const [id, session] of state.sessions) {
         let tab = tabListEl.querySelector(`[data-session-id="${id}"]`);
         if (!tab) {
-            tab = document.createElement('li');
-            tab.className = 'tab-item';
-            tab.dataset.sessionId = id;
-            
-            const previewContainer = document.createElement('div');
-            previewContainer.className = 'preview-container';
-            
-            const wrapper = document.createElement('div');
-            wrapper.className = 'preview-terminal-wrapper';
-            previewContainer.appendChild(wrapper);
-
-            const overlay = document.createElement('div');
-            overlay.className = 'tab-info-overlay';
-
-            const title = document.createElement('div');
-            title.className = 'title';
-            // Initial content will be set by updateTabUI
-
-            const metaId = document.createElement('div');
-            metaId.className = 'meta';
-            const shortId = id.split('-').pop();
-            metaId.textContent = `ID: ${shortId}`;
-
-            const metaCwd = document.createElement('div');
-            metaCwd.className = 'meta meta-cwd';
-            // Initial content will be set by updateTabUI
-
-            const metaTime = document.createElement('div');
-            metaTime.className = 'meta';
-            
-            const d = new Date(session.createdAt);
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            let hh = d.getHours();
-            const min = String(d.getMinutes()).padStart(2, '0');
-            const ampm = hh >= 12 ? 'PM' : 'AM';
-            hh = hh % 12;
-            hh = hh ? hh : 12;
-            const hhStr = String(hh).padStart(2, '0');
-            
-            metaTime.textContent = `SINCE: ${mm}-${dd} ${hhStr}:${min} ${ampm}`;
-
-            overlay.appendChild(title);
-            overlay.appendChild(metaId);
-            overlay.appendChild(metaCwd);
-            overlay.appendChild(metaTime);
-
-            tab.appendChild(previewContainer);
-            tab.appendChild(overlay);
+            tab = createTabElement(session);
             tabListEl.appendChild(tab);
-
-            // Mount the preview terminal
-            session.wrapperElement = wrapper;
-            session.previewTerm.open(wrapper);
-            session.updatePreviewScale();
             
-            // Initial UI update
+            // Mount preview
+            session.wrapperElement = tab.querySelector('.preview-terminal-wrapper');
+            session.previewTerm.open(session.wrapperElement);
+            session.updatePreviewScale();
             session.updateTabUI();
         }
 
@@ -338,6 +320,58 @@ function renderTabs() {
             tab.classList.remove('active');
         }
     }
+}
+
+function createTabElement(session) {
+    const tab = document.createElement('li');
+    tab.className = 'tab-item';
+    tab.dataset.sessionId = session.id;
+    
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'preview-container';
+    
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-terminal-wrapper';
+    previewContainer.appendChild(wrapper);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'tab-info-overlay';
+
+    const title = document.createElement('div');
+    title.className = 'title';
+
+    const metaId = document.createElement('div');
+    metaId.className = 'meta';
+    const shortId = session.id.split('-').pop();
+    metaId.textContent = `ID: ${shortId}`;
+
+    const metaCwd = document.createElement('div');
+    metaCwd.className = 'meta meta-cwd';
+
+    const metaTime = document.createElement('div');
+    metaTime.className = 'meta';
+    
+    const d = new Date(session.createdAt);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    let hh = d.getHours();
+    const min = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hh >= 12 ? 'PM' : 'AM';
+    hh = hh % 12;
+    hh = hh ? hh : 12;
+    const hhStr = String(hh).padStart(2, '0');
+    
+    metaTime.textContent = `SINCE: ${mm}-${dd} ${hhStr}:${min} ${ampm}`;
+
+    overlay.appendChild(title);
+    overlay.appendChild(metaId);
+    overlay.appendChild(metaCwd);
+    overlay.appendChild(metaTime);
+
+    tab.appendChild(previewContainer);
+    tab.appendChild(overlay);
+    
+    return tab;
 }
 
 function setStatus(status) {
@@ -359,80 +393,40 @@ function setStatus(status) {
 
 async function switchToSession(sessionId) {
     if (!sessionId || !state.sessions.has(sessionId)) return;
-
-    // Unmount current terminal if any
-    if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
-        const currentSession = state.sessions.get(state.activeSessionId);
-        // We don't dispose, just detach from DOM? xterm doesn't have a simple detach.
-        // But we can clear the container.
-    }
+    if (state.activeSessionId === sessionId) return;
 
     state.activeSessionId = sessionId;
     renderTabs();
 
     const session = state.sessions.get(sessionId);
     
-    // Clear the main terminal container
+    // Clear main view
     terminalEl.innerHTML = '';
     
-    // Mount the new session's main terminal
+    // Mount new session
     session.mainTerm.open(terminalEl);
     session.mainFitAddon.fit();
     session.mainTerm.focus();
     
-    // Trigger a resize report to sync PTY size
     session.reportResize();
 }
 
-async function removeSession(id) {
-    if (state.sessions.has(id)) {
-        state.sessions.delete(id);
-        renderTabs();
-        
-        if (state.activeSessionId === id) {
-            state.activeSessionId = null;
-            terminalEl.innerHTML = ''; // Clear main view
-            
-            // Switch to another session if available
-            if (state.sessions.size > 0) {
-                await switchToSession(state.sessions.keys().next().value);
-            } else {
-                // Create new session if none left
-                const newSessionData = await createNewSession();
-                if (newSessionData) {
-                    const newSession = new Session(newSessionData);
-                    state.sessions.set(newSession.id, newSession);
-                    await switchToSession(newSession.id);
-                }
-            }
-        }
+function shortenPath(path) {
+    if (!path) return '';
+    const parts = path.split('/').filter(p => p.length > 0);
+    if (parts.length === 0) return '/';
+    if (parts.length <= 2) return path;
+    const lastPart = parts.pop();
+    const shortenedParts = parts.map(p => p[0]);
+    let result = '/' + shortenedParts.join('/') + '/' + lastPart;
+    if (result.length > 30) {
+        result = '.../' + lastPart;
     }
-}
-
-async function initialize() {
-    const sessionsData = await fetchSessions();
-    
-    if (sessionsData.length === 0) {
-        const newSessionData = await createNewSession();
-        if (newSessionData) {
-            sessionsData.push(newSessionData);
-        }
-    }
-
-    for (const data of sessionsData) {
-        const session = new Session(data);
-        state.sessions.set(session.id, session);
-    }
-
-    renderTabs();
-
-    if (state.sessions.size > 0) {
-        await switchToSession(state.sessions.keys().next().value);
-    }
+    return result;
 }
 // #endregion
 
-// #region Event Listeners
+// #region Initialization & Event Listeners
 const resizeObserver = new ResizeObserver(() => {
     if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
         const session = state.sessions.get(state.activeSessionId);
@@ -449,13 +443,8 @@ tabListEl.addEventListener('click', (event) => {
     }
 });
 
-newTabButton.addEventListener('click', async () => {
-    const newSessionData = await createNewSession();
-    if (newSessionData) {
-        const session = new Session(newSessionData);
-        state.sessions.set(session.id, session);
-        await switchToSession(session.id);
-    }
+newTabButton.addEventListener('click', () => {
+    createNewSession();
 });
 
 window.addEventListener('beforeunload', () => {
@@ -465,32 +454,13 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-function shortenPath(path) {
-    if (!path) return '';
-    
-    // Replace home directory with ~
-    // We don't know the actual home dir on the client, but we can guess common patterns
-    // or just rely on the path as is if it's absolute.
-    // Ideally, the backend should send the home dir, but for now let's just handle the path string.
-    
-    const parts = path.split('/').filter(p => p.length > 0);
-    if (parts.length === 0) return '/';
-
-    if (parts.length <= 2) return path;
-
-    const lastPart = parts.pop();
-    const shortenedParts = parts.map(p => p[0]);
-    
-    let result = '/' + shortenedParts.join('/') + '/' + lastPart;
-    
-    // If still too long (arbitrary limit, say 30 chars), truncate with ellipsis
-    if (result.length > 30) {
-        result = '.../' + lastPart;
+// Start the app
+(async () => {
+    await syncSessions();
+    // If no sessions, create one
+    if (state.sessions.size === 0) {
+        await createNewSession();
     }
-    
-    return result;
-}
+    setInterval(syncSessions, HEARTBEAT_INTERVAL_MS);
+})();
 // #endregion
-
-// Start
-initialize();
