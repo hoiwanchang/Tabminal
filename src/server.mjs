@@ -20,6 +20,19 @@ const publicDir = path.join(__dirname, '..', 'public');
 const app = new Koa();
 const router = new Router();
 
+if (!config.accepted_security_warning) {
+    console.error(`
+[SECURITY WARNING]
+Please confirm you are running this service in a trusted environment.
+You should use a secure tunnel like Cloudflare Zero Trust or Tailscale for remote access.
+Do NOT expose this service's port directly to the public internet.
+
+You acknowledge and understand these risks.
+To start the service, use the '-y' flag or set 'accepted_security_warning: true' in your config.
+    `);
+    process.exit(1);
+}
+
 // Health check
 router.get('/healthz', (ctx) => {
     ctx.body = { status: 'ok' };

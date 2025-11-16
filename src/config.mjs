@@ -4,10 +4,11 @@ import os from 'node:os';
 import { parseArgs } from 'node:util';
 
 const DEFAULT_CONFIG = {
-    host: '0.0.0.0',
+    host: '127.0.0.1',
     port: 9846,
     heartbeatInterval: 30000,
-    historyLimit: 524288
+    historyLimit: 524288,
+    accepted_security_warning: false
 };
 
 function loadJson(filePath) {
@@ -44,6 +45,10 @@ function loadConfig() {
             },
             help: {
                 type: 'boolean'
+            },
+            yes: {
+                type: 'boolean',
+                short: 'y'
             }
         },
         strict: false // Allow other args if necessary
@@ -57,8 +62,9 @@ Usage:
   node src/server.mjs [options]
 
 Options:
-  --host, -h      Host to bind to (default: 0.0.0.0)
+  --host, -h      Host to bind to (default: 127.0.0.1)
   --port, -p      Port to listen on (default: 9846)
+  --yes, -y       Accept security warning and start server
   --help          Show this help message
         `);
         process.exit(0);
@@ -79,6 +85,9 @@ Options:
         if (!isNaN(parsedPort)) {
             finalConfig.port = parsedPort;
         }
+    }
+    if (args.yes) {
+        finalConfig.accepted_security_warning = true;
     }
 
     // Environment variables override (for backward compatibility/container usage)
