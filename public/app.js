@@ -94,6 +94,14 @@ class Session {
             this.env = data.env;
             changed = true;
         }
+        
+        if (data.cols && data.rows && (data.cols !== this.cols || data.rows !== this.rows)) {
+            this.cols = data.cols;
+            this.rows = data.rows;
+            this.previewTerm.resize(this.cols, this.rows);
+            this.updatePreviewScale();
+        }
+
         if (changed) {
             this.updateTabUI();
         }

@@ -35,7 +35,7 @@ export class TerminalSession {
                     const newTitle = s.substring(2);
                     if (newTitle && newTitle !== this.title) {
                         this.title = newTitle;
-                        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env });
+                        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols: this.pty.cols, rows: this.pty.rows });
                     }
                 } else if (s.startsWith('7;')) {
                     try {
@@ -44,7 +44,7 @@ export class TerminalSession {
                             const newCwd = decodeURIComponent(url.pathname);
                             if (newCwd !== this.cwd) {
                                 this.cwd = newCwd;
-                                this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env });
+                                this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols: this.pty.cols, rows: this.pty.rows });
                             }
                         }
                     } catch (_e) { /* ignore */ }
@@ -139,7 +139,7 @@ export class TerminalSession {
                 if (titleChanged || envChanged) {
                     if (titleChanged) this.title = newTitle;
                     if (envChanged) this.env = newEnv;
-                    this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env });
+                    this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols: this.pty.cols, rows: this.pty.rows });
                 }
             } catch (_err) { /* ignore */ }
         };
@@ -163,7 +163,7 @@ export class TerminalSession {
         ws.on('error', () => ws.close());
 
         this._send(ws, { type: 'snapshot', data: this.history });
-        this._send(ws, { type: 'meta', title: this.title, cwd: this.cwd, env: this.env });
+        this._send(ws, { type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols: this.pty.cols, rows: this.pty.rows });
         if (this.closed) {
             this._send(ws, { type: 'status', status: 'terminated' });
         } else {
@@ -181,6 +181,7 @@ export class TerminalSession {
     resize(cols, rows) {
         if (this.closed) return;
         this.pty.resize(cols, rows);
+        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols, rows });
     }
 
     _routeIncoming(raw, ws) {
@@ -206,9 +207,10 @@ export class TerminalSession {
         const safeCols = clampDimension(cols);
         const safeRows = clampDimension(rows);
         if (safeCols && safeRows) {
-            this.resize(safeCols, safeRows);
             if (this.manager) {
-                this.manager.updateDefaultSize(safeCols, safeRows);
+                this.manager.resizeAll(safeCols, safeRows);
+            } else {
+                this.resize(safeCols, safeRows);
             }
         }
     }
