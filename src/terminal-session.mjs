@@ -1,5 +1,8 @@
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import AnsiParser from 'node-ansiparser';
 
+const execAsync = promisify(exec);
 const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
 
@@ -20,6 +23,7 @@ export class TerminalSession {
         this.history = '';
         this.clients = new Set();
         this.closed = false;
+        this.pollingInterval = null;
 
         this.ansiParser = new AnsiParser({
             inst_p: (_s) => {},
@@ -72,6 +76,7 @@ export class TerminalSession {
 
         this._handleExit = (details) => {
             this.closed = true;
+            this.stopTitlePolling();
             this._broadcast({
                 type: 'status',
                 status: 'terminated',
@@ -82,6 +87,64 @@ export class TerminalSession {
 
         this.dataSubscription = this.pty.onData(this._handleData);
         this.exitSubscription = this.pty.onExit(this._handleExit);
+        
+        this.startTitlePolling();
+    }
+
+    startTitlePolling() {
+        if (this.pollingInterval) return;
+        
+        // Poll every 2 seconds
+        this.pollingInterval = setInterval(async () => {
+            if (this.closed) return;
+            try {
+                let currentPid = this.pty.pid;
+                
+                // Traverse down the process tree to find the deepest child (foreground process)
+                while (true) {
+                    try {
+                        // pgrep -P <ppid> lists child PIDs
+                        const { stdout } = await execAsync(`pgrep -P ${currentPid}`);
+                        const pids = stdout.trim().split('\n').filter(Boolean).map(p => parseInt(p, 10));
+                        
+                        if (pids.length === 0) break;
+                        
+                        // Assume the child with the highest PID is the most recent/foreground one
+                        currentPid = Math.max(...pids);
+                    } catch (e) {
+                        // pgrep returns exit code 1 if no processes found, which throws an error
+                        break;
+                    }
+                }
+
+                // If we found a descendant
+                if (currentPid !== this.pty.pid) {
+                    const { stdout: commOut } = await execAsync(`ps -o comm= -p ${currentPid}`);
+                    const newTitle = commOut.trim().split('/').pop();
+                    
+                    if (newTitle && newTitle !== this.title) {
+                        this.title = newTitle;
+                        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd });
+                    }
+                } else {
+                    // Revert to shell name if no children found
+                    const shellName = this.shell ? this.shell.split('/').pop() : 'Terminal';
+                    if (this.title !== shellName) {
+                        this.title = shellName;
+                        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd });
+                    }
+                }
+            } catch (_err) {
+                // Ignore polling errors
+            }
+        }, 2000);
+    }
+
+    stopTitlePolling() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+        }
     }
 
     attach(ws) {
