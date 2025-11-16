@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
 import { parseArgs } from 'node:util';
 
 const DEFAULT_CONFIG = {
@@ -8,7 +9,8 @@ const DEFAULT_CONFIG = {
     port: 9846,
     heartbeatInterval: 30000,
     historyLimit: 524288,
-    acceptedSecurityWarning: false
+    acceptedSecurityWarning: false,
+    password: null
 };
 
 function loadJson(filePath) {
@@ -21,6 +23,14 @@ function loadJson(filePath) {
         console.warn(`[Config] Failed to load config from ${filePath}:`, error.message);
     }
     return {};
+}
+
+function generateRandomPassword(length = 32) {
+    return crypto.randomBytes(Math.ceil(length / 2)).toString('hex').slice(0, length);
+}
+
+function sha1(input) {
+    return crypto.createHash('sha1').update(input).digest('hex');
 }
 
 function loadConfig() {
@@ -43,6 +53,10 @@ function loadConfig() {
                 type: 'string', // Parse as string first to handle potential non-numeric input safely
                 short: 'p'
             },
+            passwd: {
+                type: 'string',
+                short: 'a'
+            },
             help: {
                 type: 'boolean'
             },
@@ -64,6 +78,7 @@ Usage:
 Options:
   --host, -h      Host to bind to (default: 127.0.0.1)
   --port, -p      Port to listen on (default: 9846)
+  --passwd, -a    Set access password
   --yes, -y       Accept security warning and start server
   --help          Show this help message
         `);
@@ -89,12 +104,27 @@ Options:
     if (args.yes) {
         finalConfig.acceptedSecurityWarning = true;
     }
+    if (args.passwd) {
+        finalConfig.password = args.passwd;
+    }
 
     // Environment variables override (for backward compatibility/container usage)
     if (process.env.HOST) finalConfig.host = process.env.HOST;
     if (process.env.PORT) finalConfig.port = parseInt(process.env.PORT, 10);
     if (process.env.TABMINAL_HEARTBEAT) finalConfig.heartbeatInterval = parseInt(process.env.TABMINAL_HEARTBEAT, 10);
     if (process.env.TABMINAL_HISTORY) finalConfig.historyLimit = parseInt(process.env.TABMINAL_HISTORY, 10);
+    if (process.env.TABMINAL_PASSWORD) finalConfig.password = process.env.TABMINAL_PASSWORD;
+
+    // Password Logic
+    if (!finalConfig.password) {
+        finalConfig.password = generateRandomPassword();
+        console.log('\n[SECURITY] No password provided. Generated temporary password:');
+        console.log(`\x1b[36m${finalConfig.password}\x1b[0m`);
+        console.log('Please save this password or set a custom one using -a/--passwd.\n');
+    }
+
+    // Store SHA1 hash in memory
+    finalConfig.passwordHash = sha1(finalConfig.password);
 
     return finalConfig;
 }

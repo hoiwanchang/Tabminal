@@ -9,10 +9,115 @@ const statusEl = document.getElementById('status-pill');
 const tabListEl = document.getElementById('tab-list');
 const newTabButton = document.getElementById('new-tab-button');
 const systemStatusBarEl = document.getElementById('system-status-bar');
+const loginModal = document.getElementById('login-modal');
+const loginForm = document.getElementById('login-form');
+const passwordInput = document.getElementById('password-input');
+const loginError = document.getElementById('login-error');
 // #endregion
 
 // #region Configuration
 const HEARTBEAT_INTERVAL_MS = 1000;
+// #endregion
+
+// #region Auth Manager
+class AuthManager {
+    constructor() {
+        this.token = localStorage.getItem('tabminal_auth_token');
+        this.isAuthenticated = !!this.token;
+        this.heartbeatTimer = null;
+    }
+
+    async hashPassword(password) {
+        const msgBuffer = new TextEncoder().encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-1', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async login(password) {
+        const hash = await this.hashPassword(password);
+        this.token = hash;
+        localStorage.setItem('tabminal_auth_token', hash);
+        this.isAuthenticated = true;
+        this.hideLoginModal();
+        this.startHeartbeat();
+        // Retry initial sync
+        await initApp();
+    }
+
+    logout() {
+        this.isAuthenticated = false;
+        this.stopHeartbeat();
+        this.showLoginModal();
+    }
+
+    showLoginModal(errorMsg = '') {
+        loginModal.style.display = 'flex';
+        passwordInput.value = '';
+        passwordInput.focus();
+        if (errorMsg) {
+            loginError.textContent = errorMsg;
+        } else {
+            loginError.textContent = '';
+        }
+    }
+
+    hideLoginModal() {
+        loginModal.style.display = 'none';
+        loginError.textContent = '';
+    }
+
+    getHeaders() {
+        return this.token ? { 'Authorization': this.token } : {};
+    }
+
+    async fetch(url, options = {}) {
+        if (!this.isAuthenticated && !url.includes('/healthz')) {
+            // If not authenticated, don't even try, unless it's a public endpoint (none currently)
+            // But we might be in the process of logging in.
+            // Actually, we should try if we have a token.
+        }
+
+        const headers = {
+            ...options.headers,
+            ...this.getHeaders()
+        };
+
+        try {
+            const response = await fetch(url, { ...options, headers });
+            
+            if (response.status === 401) {
+                this.logout();
+                throw new Error('Unauthorized');
+            }
+            
+            if (response.status === 403) {
+                const data = await response.json().catch(() => ({}));
+                this.stopHeartbeat();
+                this.showLoginModal(data.error || 'Service locked. Please restart server.');
+                throw new Error('Service locked');
+            }
+
+            return response;
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    startHeartbeat() {
+        if (this.heartbeatTimer) return;
+        this.heartbeatTimer = setInterval(syncSessions, HEARTBEAT_INTERVAL_MS);
+    }
+
+    stopHeartbeat() {
+        if (this.heartbeatTimer) {
+            clearInterval(this.heartbeatTimer);
+            this.heartbeatTimer = null;
+        }
+    }
+}
+
+const auth = new AuthManager();
 // #endregion
 
 // #region FPS Counter
@@ -184,9 +289,72 @@ class Session {
     }
 
     connect() {
+        if (!auth.isAuthenticated) return;
+
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const endpoint = `${protocol}://${window.location.host}/ws/${this.id}`;
-        this.socket = new WebSocket(endpoint);
+        
+        // Pass auth token in protocol or query param? 
+        // Standard WebSocket API doesn't support custom headers.
+        // We can use the 'Sec-WebSocket-Protocol' header (subprotocol) to pass the token.
+        // Or query parameter. Query parameter is easier to log but visible.
+        // Let's use subprotocol or just rely on the initial HTTP upgrade request which *does* send cookies/headers?
+        // Wait, browser WebSocket API does NOT allow setting custom headers.
+        // Common workaround: Put token in the subprotocol array.
+        // `new WebSocket(url, [token])`
+        // But the server needs to accept it.
+        // Alternatively, use a query parameter `?token=...`
+        // Let's use query parameter for simplicity in this context, or subprotocol.
+        // Requirement said: "header中攜帶這個編碼過的密碼".
+        // Browser JS WebSocket cannot set headers.
+        // However, if we use a library or if we are in a specific env... no, this is standard browser.
+        // Workaround: The initial HTTP Upgrade request is a standard HTTP request.
+        // But we can't add headers to it in JS.
+        // We MUST use query param or subprotocol.
+        // Let's use subprotocol as it's cleaner than query param in logs.
+        // But `ws` library on server needs to handle it.
+        // `verifyClient` in `ws` receives `info.req`.
+        // If we use subprotocol, it appears in `Sec-WebSocket-Protocol` header.
+        // Let's try to pass it as a subprotocol.
+        // Note: The token is a hex string.
+        
+        // Actually, let's use query param for maximum compatibility if headers are impossible.
+        // But wait, the requirement explicitly said "header".
+        // "之後的請求都會在header中攜帶這個編碼過的密碼... ws api都需要有這個權限限制"
+        // If the user insists on header for WS, they might assume we can control it.
+        // Since we can't in browser, I will implement it via `Sec-WebSocket-Protocol` which IS a header.
+        // Server side `verifyClient` can read `sec-websocket-protocol`.
+        
+        // Wait, `verifyClient` in `src/auth.mjs` checks `req.headers['authorization']`.
+        // I need to update `src/auth.mjs` or `src/server.mjs` to also check `sec-websocket-protocol` or query param.
+        // Let's stick to the plan: I will modify the client to send it via subprotocol, 
+        // AND I will assume I need to fix the server side to look there if 'authorization' is missing.
+        // OR, I can use a query param and map it to authorization header in the server before auth check?
+        // Let's use the subprotocol approach.
+        
+        // But wait, `ws` server expects the subprotocol to be negotiated.
+        // If I send `new WebSocket(url, [token])`, the server must respond with that protocol or it fails?
+        // Actually, `verifyClient` runs *before* negotiation.
+        
+        // Let's try to use the subprotocol.
+        // But `token` might have characters invalid for protocol? Hex is fine.
+        
+        // REVISION: I will use a query parameter `?auth=TOKEN` for WebSocket because it's the most robust way in browsers without cookies.
+        // And I will update the server to check that too.
+        // Wait, I can't update server easily now without another tool call.
+        // Let's check `src/auth.mjs` again. It checks `req.headers['authorization']`.
+        // I should have thought of this.
+        // I will use `verifyClient` to check `req.url` for query param if header is missing.
+        // But I already wrote `src/auth.mjs`.
+        // I will update `src/auth.mjs` to check query param as well.
+        
+        // Let's update the client to send it via query param.
+        
+        // Wait, I can use `document.cookie`? No, stateless.
+        
+        // Let's use the query param `?token=...`
+        
+        this.socket = new WebSocket(`${endpoint}?token=${auth.token}`);
 
         this.socket.addEventListener('open', () => {
             this.reconnectAttempts = 0;
@@ -199,12 +367,26 @@ class Session {
             } catch (_err) { /* ignore */ }
         });
 
-        this.socket.addEventListener('close', () => {
+        this.socket.addEventListener('close', (event) => {
+            // 400-499 codes usually mean auth failure or bad request in WS handshake
+            // But WS close codes are different. 
+            // If handshake fails (401), the `error` event fires, then `close`.
+            // The close code might be 1006 (abnormal).
+            
             if (this.shouldReconnect) {
+                // If auth failed, we shouldn't reconnect blindly.
+                // But how do we know it was auth failure?
+                // Browser WebSocket API gives very little info on handshake failure.
+                // We rely on the HTTP heartbeat to detect auth failure and stop everything.
+                
                 const wait = Math.min(5000, 500 * 2 ** this.reconnectAttempts);
                 this.reconnectAttempts++;
                 this.retryTimer = setTimeout(() => this.connect(), wait);
             }
+        });
+        
+        this.socket.addEventListener('error', () => {
+            // Often fires on 401
         });
     }
 
@@ -227,8 +409,6 @@ class Session {
                 break;
             case 'status':
                 if (state.activeSessionId === this.id) setStatus(message.status);
-                // Note: We don't removeSession here anymore; we let the heartbeat handle it.
-                // But if the socket says 'terminated', we can mark it.
                 break;
         }
     }
@@ -281,12 +461,13 @@ const state = {
 };
 
 async function syncSessions() {
+    if (!auth.isAuthenticated) return;
+
     try {
-        const response = await fetch('/api/heartbeat');
+        const response = await auth.fetch('/api/heartbeat');
         if (!response.ok) return;
         const data = await response.json();
         
-        // Handle legacy response (array) or new response (object)
         const sessions = Array.isArray(data) ? data : data.sessions;
         const system = data.system;
 
@@ -393,7 +574,7 @@ function reconcileSessions(remoteSessions) {
 
 async function createNewSession() {
     try {
-        const response = await fetch('/api/sessions', { method: 'POST' });
+        const response = await auth.fetch('/api/sessions', { method: 'POST' });
         if (!response.ok) throw new Error('Failed to create session');
         const newSession = await response.json();
         // Immediate sync to reflect the new session
@@ -565,11 +746,7 @@ function shortenPath(path) {
 
 async function closeSession(id) {
     try {
-        await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
-        // The heartbeat will eventually sync the removal, but for better UX we can handle the UI update immediately
-        // or just wait for the sync.
-        // However, the requirement says: "If the closed session is the current one... select the previous one..."
-        // We should handle the selection logic locally before or after the delete.
+        await auth.fetch(`/api/sessions/${id}`, { method: 'DELETE' });
         
         const sessionIds = Array.from(state.sessions.keys());
         const index = sessionIds.indexOf(id);
@@ -585,17 +762,11 @@ async function closeSession(id) {
             if (nextId) {
                 switchToSession(nextId);
             } else {
-                // No sessions left after this one is gone.
-                // The backend might auto-create one, or we might need to trigger it.
-                // If we rely on syncSessions, it will see 0 sessions and create one.
-                // But let's be proactive.
                 state.activeSessionId = null;
                 terminalEl.innerHTML = '';
             }
         }
         
-        // We can optimistically remove it from the map, but the heartbeat is the source of truth.
-        // Let's just trigger a sync immediately after the delete returns.
         await syncSessions();
         
     } catch (error) {
@@ -634,6 +805,16 @@ newTabButton.addEventListener('click', () => {
     createNewSession();
 });
 
+loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = passwordInput.value;
+    try {
+        await auth.login(password);
+    } catch (err) {
+        console.error(err);
+    }
+});
+
 window.addEventListener('beforeunload', () => {
     resizeObserver.disconnect();
     for (const session of state.sessions.values()) {
@@ -641,13 +822,20 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
-// Start the app
-(async () => {
+async function initApp() {
+    if (!auth.isAuthenticated) {
+        auth.showLoginModal();
+        return;
+    }
+    
+    auth.startHeartbeat();
     await syncSessions();
     // If no sessions, create one
     if (state.sessions.size === 0) {
         await createNewSession();
     }
-    setInterval(syncSessions, HEARTBEAT_INTERVAL_MS);
-})();
+}
+
+// Start the app
+initApp();
 // #endregion

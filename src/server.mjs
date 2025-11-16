@@ -12,6 +12,7 @@ import { WebSocketServer } from 'ws';
 import { TerminalManager } from './terminal-manager.mjs';
 import { SystemMonitor } from './system-monitor.mjs';
 import { config } from './config.mjs';
+import { authMiddleware, verifyClient } from './auth.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,12 @@ To start the service, use the '-y' flag or set 'acceptedSecurityWarning: true' i
 router.get('/healthz', (ctx) => {
     ctx.body = { status: 'ok' };
 });
+
+// Serve static files (public) BEFORE auth middleware
+app.use(serve(publicDir));
+
+// Auth Middleware for API routes
+app.use(authMiddleware);
 
 const systemMonitor = new SystemMonitor();
 const terminalManager = new TerminalManager();
@@ -72,15 +79,15 @@ router.delete('/api/sessions/:id', (ctx) => {
 });
 
 // Middleware
-app.use(serve(publicDir));
 app.use(router.routes());
 app.use(router.allowedMethods());
 
 const httpServer = createServer(app.callback());
-const wss = new WebSocketServer({ noServer: true });
+const wss = new WebSocketServer({ noServer: true, verifyClient });
 
 httpServer.on('upgrade', (request, socket, head) => {
-    const pathname = request.url;
+    const url = new URL(request.url, `http://${request.headers.host}`);
+    const pathname = url.pathname;
 
     if (pathname.startsWith('/ws/')) {
         const match = pathname.match(/^\/ws\/([a-zA-Z0-9-]+)$/);
