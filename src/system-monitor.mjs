@@ -78,6 +78,13 @@ export class SystemMonitor {
             if (ip !== 'Unknown') break;
         }
 
+        const speeds = cpus.map(c => c.speed);
+        const minSpeed = Math.min(...speeds);
+        const maxSpeed = Math.max(...speeds);
+        const speedStr = minSpeed === maxSpeed 
+            ? `${(minSpeed / 1000).toFixed(1)}GHz`
+            : `${(minSpeed / 1000).toFixed(1)}GHz-${(maxSpeed / 1000).toFixed(1)}GHz`;
+
         this.cachedStats = {
             hostname: os.hostname(),
             osName: `${os.type()} ${os.release()}`, // e.g. Darwin 21.6.0
@@ -85,6 +92,7 @@ export class SystemMonitor {
             cpu: {
                 model: cpuModel,
                 count: cpuCount,
+                speed: speedStr,
                 usagePercent: usagePercent.toFixed(1)
             },
             memory: {

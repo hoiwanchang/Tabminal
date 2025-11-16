@@ -338,7 +338,7 @@ function updateSystemStatus(system) {
         { label: 'Host', value: system.hostname },
         { label: 'OS', value: system.osName },
         { label: 'IP', value: system.ip },
-        { label: 'CPU', value: `${system.cpu.usagePercent}% ${renderProgressBar(system.cpu.usagePercent)}` },
+        { label: 'CPU', value: `${system.cpu.count}x ${system.cpu.speed} ${system.cpu.usagePercent}% ${renderProgressBar(system.cpu.usagePercent)}` },
         { label: 'Mem', value: `${formatBytesPair(system.memory.used, system.memory.total)} ${memPercent.toFixed(0)}% ${renderProgressBar(memPercent)}` },
         { label: 'Up', value: formatUptime(system.uptime) },
         { label: 'Tabminal', value: formatUptime(system.processUptime) },
