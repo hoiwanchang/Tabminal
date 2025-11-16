@@ -30,7 +30,8 @@
                 <h2>Authentication Required</h2>
                 <p>Please enter the access password to continue.</p>
                 <form id="login-form">
-                    <input type="password" id="password-input" placeholder="Password" required autofocus>
+                    <input type="text" name="username" value="admin" autocomplete="username" style="display:none;" aria-hidden="true">
+                    <input type="password" id="password-input" placeholder="Password" autocomplete="current-password" required autofocus>
                     <button type="submit">Login</button>
                 </form>
                 <p id="login-error" class="error-message"></p>
