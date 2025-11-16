@@ -23,6 +23,9 @@ describe('TerminalSession', () => {
             data: 'hello world'
         });
         expect(payloads[1]).toMatchObject({
+            type: 'meta'
+        });
+        expect(payloads[2]).toMatchObject({
             type: 'status',
             status: 'ready'
         });

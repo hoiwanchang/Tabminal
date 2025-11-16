@@ -15,6 +15,12 @@ class Session {
     constructor(data) {
         this.id = data.id;
         this.createdAt = data.createdAt;
+        this.shell = data.shell || 'Terminal';
+        this.initialCwd = data.initialCwd || '';
+        
+        this.title = data.title || this.shell.split('/').pop();
+        this.cwd = data.cwd || this.initialCwd;
+
         this.history = ''; // Client-side history buffer
         this.socket = null;
         this.reconnectAttempts = 0;
@@ -144,6 +150,25 @@ class Session {
         });
     }
 
+    updateTabUI() {
+        const tab = tabListEl.querySelector(`[data-session-id="${this.id}"]`);
+        if (!tab) return;
+
+        const titleEl = tab.querySelector('.title');
+        const metaEl = tab.querySelector('.meta-cwd');
+
+        if (titleEl) {
+            titleEl.textContent = this.title;
+            titleEl.title = this.title; // Tooltip
+        }
+
+        if (metaEl) {
+            const shortened = shortenPath(this.cwd);
+            metaEl.textContent = shortened;
+            metaEl.title = this.cwd; // Tooltip
+        }
+    }
+
     connect() {
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const endpoint = `${protocol}://${window.location.host}/ws/${this.id}`;
@@ -195,6 +220,11 @@ class Session {
             case 'output':
                 this.history += message.data;
                 this.writeToTerminals(message.data);
+                break;
+            case 'meta':
+                if (message.title) this.title = message.title;
+                if (message.cwd) this.cwd = message.cwd;
+                this.updateTabUI();
                 break;
             case 'pong':
                 this.awaitingPong = false;
@@ -327,26 +357,29 @@ function renderTabs() {
 
             const title = document.createElement('div');
             title.className = 'title';
-            title.textContent = 'Terminal';
+            // Initial content will be set by updateTabUI
+
+            const metaCwd = document.createElement('div');
+            metaCwd.className = 'meta meta-cwd';
+            // Initial content will be set by updateTabUI
 
             const metaId = document.createElement('div');
             metaId.className = 'meta';
             metaId.textContent = `ID: ${id.substring(0, 8)}...`;
 
-            const metaTime = document.createElement('div');
-            metaTime.className = 'meta';
-            metaTime.textContent = `Created: ${new Date(session.createdAt).toLocaleTimeString()}`;
-
             tab.appendChild(previewContainer);
             tab.appendChild(title);
+            tab.appendChild(metaCwd);
             tab.appendChild(metaId);
-            tab.appendChild(metaTime);
             tabListEl.appendChild(tab);
 
             // Mount the preview terminal
             session.wrapperElement = wrapper;
             session.previewTerm.open(wrapper);
             session.updatePreviewScale();
+            
+            // Initial UI update
+            session.updateTabUI();
         }
 
         if (id === state.activeSessionId) {
@@ -481,6 +514,32 @@ window.addEventListener('beforeunload', () => {
         session.dispose();
     }
 });
+
+function shortenPath(path) {
+    if (!path) return '';
+    
+    // Replace home directory with ~
+    // We don't know the actual home dir on the client, but we can guess common patterns
+    // or just rely on the path as is if it's absolute.
+    // Ideally, the backend should send the home dir, but for now let's just handle the path string.
+    
+    const parts = path.split('/').filter(p => p.length > 0);
+    if (parts.length === 0) return '/';
+
+    if (parts.length <= 2) return path;
+
+    const lastPart = parts.pop();
+    const shortenedParts = parts.map(p => p[0]);
+    
+    let result = '/' + shortenedParts.join('/') + '/' + lastPart;
+    
+    // If still too long (arbitrary limit, say 30 chars), truncate with ellipsis
+    if (result.length > 30) {
+        result = '.../' + lastPart;
+    }
+    
+    return result;
+}
 // #endregion
 
 // Start

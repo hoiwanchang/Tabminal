@@ -32,11 +32,14 @@ export class TerminalManager {
 
     createSession() {
         const id = crypto.randomUUID();
-        const ptyProcess = pty.spawn(resolveShell(), [], {
+        const shell = resolveShell();
+        const initialCwd = process.env.TABMINAL_CWD || process.cwd();
+        
+        const ptyProcess = pty.spawn(shell, [], {
             name: 'xterm-256color',
             cols: this.lastCols, // Use the last known size
             rows: this.lastRows, // Use the last known size
-            cwd: process.env.TABMINAL_CWD || process.cwd(),
+            cwd: initialCwd,
             env: process.env,
             encoding: 'utf8'
         });
@@ -45,7 +48,9 @@ export class TerminalManager {
             id,
             historyLimit,
             createdAt: new Date(),
-            manager: this // Pass manager reference to session
+            manager: this, // Pass manager reference to session
+            shell,
+            initialCwd
         });
 
         // When a pty process exits, automatically remove it from the manager
@@ -60,6 +65,15 @@ export class TerminalManager {
 
     getSession(id) {
         return this.sessions.get(id);
+    }
+
+    resizeAll(cols, rows) {
+        console.log(`[Manager] Resizing all sessions to ${cols}x${rows}`);
+        this.lastCols = cols;
+        this.lastRows = rows;
+        for (const session of this.sessions.values()) {
+            session.resize(cols, rows);
+        }
     }
 
     updateDefaultSize(cols, rows) {
@@ -85,7 +99,10 @@ export class TerminalManager {
         return Array.from(this.sessions.values()).map(s => ({
             id: s.id,
             createdAt: s.createdAt,
-            // In the future, we can add more metadata here, like CWD or process name
+            shell: s.shell,
+            initialCwd: s.initialCwd,
+            title: s.title,
+            cwd: s.cwd
         }));
     }
 

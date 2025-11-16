@@ -1,3 +1,5 @@
+import AnsiParser from 'node-ansiparser';
+
 const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
 
@@ -7,6 +9,10 @@ export class TerminalSession {
         this.id = options.id;
         this.manager = options.manager; // Store a reference to the manager
         this.createdAt = options.createdAt ?? new Date();
+        this.shell = options.shell;
+        this.initialCwd = options.initialCwd;
+        this.title = this.shell ? this.shell.split('/').pop() : 'Terminal';
+        this.cwd = this.initialCwd;
         this.historyLimit = Math.max(
             1,
             options.historyLimit ?? DEFAULT_HISTORY_LIMIT
@@ -15,12 +21,50 @@ export class TerminalSession {
         this.clients = new Set();
         this.closed = false;
 
+        this.ansiParser = new AnsiParser({
+            inst_p: (_s) => {},
+            inst_o: (s) => {
+                // OSC Handler
+                // s is the content of the OSC sequence
+                if (s.startsWith('0;') || s.startsWith('2;')) {
+                    // Title change: "0;Title" or "2;Title"
+                    const newTitle = s.substring(2);
+                    if (newTitle && newTitle !== this.title) {
+                        this.title = newTitle;
+                        this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd });
+                    }
+                } else if (s.startsWith('7;')) {
+                    // CWD change: "7;file://hostname/path"
+                    try {
+                        const urlStr = s.substring(2);
+                        const url = new URL(urlStr);
+                        if (url.pathname) {
+                            const newCwd = decodeURIComponent(url.pathname);
+                            if (newCwd !== this.cwd) {
+                                this.cwd = newCwd;
+                                this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd });
+                            }
+                        }
+                    } catch (_e) {
+                        // ignore invalid URLs
+                    }
+                }
+            },
+            inst_x: (_flag) => {},
+            inst_c: (_collected, _params, _flag) => {},
+            inst_e: (_collected, _flag) => {},
+            inst_d: (_collected, _params, _flag) => {},
+        });
+
         this._handleData = (chunk) => {
             if (typeof chunk !== 'string') {
                 chunk = chunk.toString('utf8');
             }
             // Update the raw history
             this._appendHistory(chunk);
+            
+            // Parse for metadata updates
+            this.ansiParser.parse(chunk);
 
             // Broadcast the raw output to active clients
             this._broadcast({ type: 'output', data: chunk });
@@ -55,6 +99,7 @@ export class TerminalSession {
         });
 
         this._send(ws, { type: 'snapshot', data: this.history });
+        this._send(ws, { type: 'meta', title: this.title, cwd: this.cwd });
         if (this.closed) {
             this._send(ws, { type: 'status', status: 'terminated' });
         } else {
