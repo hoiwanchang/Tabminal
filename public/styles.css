@@ -48,13 +48,14 @@ body {
 }
 
 .tab-item {
-    padding: 12px 10px;
+    position: relative;
     margin-bottom: 8px;
     border-radius: 6px;
     cursor: pointer;
     background-color: var(--bg-surface);
     border: 1px solid transparent;
     transition: background-color 0.2s ease, border-color 0.2s ease;
+    overflow: hidden; /* Clip content to rounded corners */
 }
 
 .tab-item:hover {
@@ -68,9 +69,6 @@ body {
 
 .preview-container {
     background-color: var(--bg-base);
-    border-radius: 4px;
-    margin-bottom: 8px;
-    overflow: hidden;
     position: relative;
     /* Center the scaled terminal */
     display: flex;
@@ -88,22 +86,39 @@ body {
     pointer-events: none; /* Disable interaction, allow clicks to pass through */
 }
 
+.tab-info-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    padding: 6px 8px;
+    background: rgba(0, 43, 54, 0.75); /* Semi-transparent background */
+    backdrop-filter: blur(4px); /* Frosted glass effect */
+    border-top: 1px solid rgba(88, 110, 117, 0.3);
+    pointer-events: none; /* Allow clicks to pass through */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
 
-.tab-item .meta {
-    font-size: 0.75rem;
+.tab-info-overlay .meta {
+    font-size: 0.7rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
-.tab-item .title {
-    font-size: 0.9rem;
+.tab-info-overlay .title {
+    font-size: 0.85rem;
     color: var(--text-highlight);
-    margin-bottom: 4px;
+    font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
+    margin-bottom: 2px;
 }
 
 .new-tab-button {

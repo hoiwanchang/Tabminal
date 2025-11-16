@@ -355,6 +355,9 @@ function renderTabs() {
             wrapper.className = 'preview-terminal-wrapper';
             previewContainer.appendChild(wrapper);
 
+            const overlay = document.createElement('div');
+            overlay.className = 'tab-info-overlay';
+
             const title = document.createElement('div');
             title.className = 'title';
             // Initial content will be set by updateTabUI
@@ -383,11 +386,13 @@ function renderTabs() {
             
             metaTime.textContent = `SINCE: ${mm}-${dd} ${hhStr}:${min} ${ampm}`;
 
+            overlay.appendChild(title);
+            overlay.appendChild(metaId);
+            overlay.appendChild(metaCwd);
+            overlay.appendChild(metaTime);
+
             tab.appendChild(previewContainer);
-            tab.appendChild(title);
-            tab.appendChild(metaId);
-            tab.appendChild(metaCwd);
-            tab.appendChild(metaTime);
+            tab.appendChild(overlay);
             tabListEl.appendChild(tab);
 
             // Mount the preview terminal
