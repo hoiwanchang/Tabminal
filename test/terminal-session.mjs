@@ -3,6 +3,13 @@ import assert from 'node:assert';
 
 import { TerminalSession } from '../src/terminal-session.mjs';
 
+const PROMPT_END_MARKER = '\u001b]1337;P_END\u0007';
+
+function buildExitSequence(exitCode, command) {
+    const encoded = Buffer.from(command, 'utf8').toString('base64');
+    return `\u001b]1337;ExitCode=${exitCode};CommandB64=${encoded}\u0007`;
+}
+
 describe('TerminalSession', () => {
     let pty;
     let session;
@@ -27,12 +34,12 @@ describe('TerminalSession', () => {
         session.attach(client);
 
         const payloads = client.sent.map((raw) => JSON.parse(raw));
-        
+
         assert.strictEqual(payloads[0].type, 'snapshot');
         assert.strictEqual(payloads[0].data, 'hello world');
-        
+
         assert.strictEqual(payloads[1].type, 'meta');
-        
+
         assert.strictEqual(payloads[2].type, 'status');
         assert.strictEqual(payloads[2].status, 'ready');
     });
@@ -85,7 +92,7 @@ describe('TerminalSession', () => {
 
         assert.strictEqual(pty.write.mock.calls.length, 0);
         const payloads = client.sent.map((raw) => JSON.parse(raw));
-        
+
         const statusMsg = payloads.find(p => p.type === 'status' && p.status === 'terminated');
         assert.ok(statusMsg, 'Should contain terminated status');
         assert.strictEqual(statusMsg.code, 0);
@@ -101,6 +108,77 @@ describe('TerminalSession', () => {
         session.attach(client);
         const payloads = client.sent.map((raw) => JSON.parse(raw));
         assert.strictEqual(payloads[0].data, '6789abcdef');
+    });
+
+    it('captures execution output between prompt end and exit markers', () => {
+        session = new TerminalSession(pty);
+        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('ls\nfile.txt\n');
+        pty.emitData(buildExitSequence(0, 'ls'));
+
+        assert.ok(session.lastExecution);
+        assert.strictEqual(session.lastExecution.command, 'ls');
+        assert.strictEqual(session.lastExecution.exitCode, 0);
+        assert.strictEqual(session.lastExecution.output, 'ls\nfile.txt\n');
+    });
+
+    it('resets the capture buffer for consecutive commands', () => {
+        session = new TerminalSession(pty);
+
+        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('ls\nfoo\n');
+        pty.emitData(buildExitSequence(2, 'ls'));
+
+        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('pwd\n/bar\n');
+        pty.emitData(buildExitSequence(0, 'pwd'));
+
+        assert.ok(session.lastExecution);
+        assert.strictEqual(session.lastExecution.command, 'pwd');
+        assert.strictEqual(session.lastExecution.exitCode, 0);
+        assert.strictEqual(session.lastExecution.output, 'pwd\n/bar\n');
+    });
+
+    it('logs each execution summary once it completes', () => {
+        session = new TerminalSession(pty);
+        const originalLog = console.log;
+        const calls = [];
+        console.log = (...args) => { calls.push(args); };
+
+        try {
+            pty.emitData(PROMPT_END_MARKER);
+            pty.emitData('echo hi\nhi\n');
+            pty.emitData(buildExitSequence(0, 'echo hi'));
+        } finally {
+            console.log = originalLog;
+        }
+
+        assert.strictEqual(calls.length, 1);
+        assert.strictEqual(calls[0][0], '[Terminal Execution]');
+        assert.deepStrictEqual(calls[0][1], {
+            command: 'echo hi',
+            exitCode: 0,
+            startedAt: session.lastExecution.startedAt.toISOString(),
+            completedAt: session.lastExecution.completedAt.toISOString(),
+            durationMs: session.lastExecution.completedAt.getTime() - session.lastExecution.startedAt.getTime(),
+            output: 'echo hi\nhi\n',
+        });
+    });
+
+    it('does not forward control sequences to clients', () => {
+        session = new TerminalSession(pty);
+        const client = new MockSocket();
+        session.attach(client);
+        client.sent = [];
+
+        pty.emitData(
+            `${PROMPT_END_MARKER}echo hi\nhi\n${buildExitSequence(0, 'echo hi')}`
+        );
+
+        const payloads = client.sent.map((raw) => JSON.parse(raw));
+        const outputMsg = payloads.find((p) => p.type === 'output');
+        assert.ok(outputMsg);
+        assert.strictEqual(outputMsg.data, 'echo hi\nhi\n');
     });
 });
 

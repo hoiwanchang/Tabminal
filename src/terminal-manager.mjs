@@ -63,14 +63,20 @@ _tabminal_bash_postexec() {
   local EC="$?"
   if [[ -n "$_tabminal_last_command" ]]; then
     local CMD=$(echo -n "$_tabminal_last_command" | base64 | tr -d '\\n')
-    printf "\\033]1337;ExitCode=%s;CommandB64=%s\\007" "$EC" "$CMD"
+    printf "\\x1b]1337;ExitCode=%s;CommandB64=%s\\x07" "$EC" "$CMD"
     _tabminal_last_command="" # Reset after use
   fi
+  printf "\\x1b]1337;P_END\\x07"
 }
-export PROMPT_COMMAND="_tabminal_bash_postexec; $PROMPT_COMMAND"
+if [[ -n "$PROMPT_COMMAND" ]]; then
+  printf -v PROMPT_COMMAND "_tabminal_bash_postexec; %s" "$PROMPT_COMMAND"
+else
+  PROMPT_COMMAND="_tabminal_bash_postexec"
+fi
+export PROMPT_COMMAND
 `;
                 fs.writeFileSync(initFilePath, bashScript);
-                args = ['--rcfile', initFilePath];
+                args = ['--rcfile', initFilePath, '-i'];
             } else if (shellName === 'zsh') {
                 initDirPath = path.join(os.tmpdir(), `tabminal-zsh-${id}`);
                 fs.mkdirSync(initDirPath, { recursive: true });
@@ -87,15 +93,17 @@ _tabminal_zsh_postexec() {
   local EC="$?"
   if [[ -n "$_tabminal_last_command" ]]; then
     local CMD=$(echo -n "$_tabminal_last_command" | base64 | tr -d '\\n')
-    printf "\\03d]1337;ExitCode=%s;CommandB64=%s\\007" "$EC" "$CMD"
+    printf "\\x1b]1337;ExitCode=%s;CommandB64=%s\\x07" "$EC" "$CMD"
   fi
   _tabminal_last_command="" # Reset after use
+  printf "\\x1b]1337;P_END\\x07"
 }
 preexec_functions+=(_tabminal_zsh_preexec)
 precmd_functions+=(_tabminal_zsh_postexec)
 `;
                 fs.writeFileSync(initFilePath, zshScript);
                 env.ZDOTDIR = initDirPath;
+                args = ['-i'];
             }
         } catch (err) {
             console.error('[Manager] Failed to create init script:', err);

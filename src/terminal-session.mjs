@@ -5,7 +5,8 @@ import AnsiParser from 'node-ansiparser';
 const execAsync = promisify(exec);
 const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
-const EXIT_CODE_REGEX = /\u001b\]1337;ExitCode=(\d+);CommandB64=([a-zA-Z0-9+/=]+)\u0007/g;
+const OSC1337_META_REGEX =
+    /\u001b\]1337;(?:ExitCode=(\d+);CommandB64=([a-zA-Z0-9+/=]+)|P_(START|END))\u0007/g;
 
 export class TerminalSession {
     constructor(pty, options = {}) {
@@ -29,6 +30,8 @@ export class TerminalSession {
         this.clients = new Set();
         this.closed = false;
         this.pollingInterval = null;
+        this.captureState = { active: false, buffer: '', startedAt: null };
+        this.lastExecution = null;
 
         this.ansiParser = new AnsiParser({
             inst_o: (s) => {
@@ -56,28 +59,42 @@ export class TerminalSession {
         this._handleData = (chunk) => {
             if (typeof chunk !== 'string') chunk = chunk.toString('utf8');
 
-            // DEBUG: Inspect raw data if it contains our keyword
-            if (chunk.includes('ExitCode')) {
-                console.log('[DEBUG] Raw chunk with ExitCode:', JSON.stringify(chunk));
+            let cleaned = '';
+            let lastIndex = 0;
+            OSC1337_META_REGEX.lastIndex = 0;
+
+            let match;
+            while ((match = OSC1337_META_REGEX.exec(chunk)) !== null) {
+                const plain = chunk.slice(lastIndex, match.index);
+                if (plain) {
+                    cleaned += plain;
+                    this._bufferCommandOutput(plain);
+                }
+
+                const exitCodeStr = match[1];
+                const cmdB64 = match[2];
+                const marker = match[3];
+
+                if (exitCodeStr !== undefined) {
+                    this._handleExitCodeSequence(exitCodeStr, cmdB64);
+                } else if (marker) {
+                    this._handlePromptMarker(marker);
+                }
+
+                lastIndex = OSC1337_META_REGEX.lastIndex;
             }
 
-            // Intercept and strip exit code sequences
-            chunk = chunk.replace(EXIT_CODE_REGEX, (match, code, cmdB64) => {
-                const exitCode = parseInt(code, 10);
-                if (!isNaN(exitCode) && exitCode !== 0) {
-                    try {
-                        const command = Buffer.from(cmdB64, 'base64').toString('utf8').trim();
-                        console.log(`[Terminal Error] Exit Code: ${exitCode} | Command: "${command}"`);
-                    } catch (e) {
-                        console.error('[Terminal Error] Failed to decode command:', e);
-                    }
-                }
-                return ''; // Remove the sequence from the output
-            });
+            const tail = chunk.slice(lastIndex);
+            if (tail) {
+                cleaned += tail;
+                this._bufferCommandOutput(tail);
+            }
 
-            this._appendHistory(chunk);
-            this.ansiParser.parse(chunk);
-            this._broadcast({ type: 'output', data: chunk });
+            if (!cleaned) return;
+
+            this._appendHistory(cleaned);
+            this.ansiParser.parse(cleaned);
+            this._broadcast({ type: 'output', data: cleaned });
         };
 
         this._handleExit = (details) => {
@@ -241,6 +258,91 @@ export class TerminalSession {
         if (this.history.length > this.historyLimit) {
             this.history = this.history.slice(this.history.length - this.historyLimit);
         }
+    }
+
+    _handlePromptMarker(marker) {
+        if (marker !== 'END') return;
+        this.captureState.active = true;
+        this.captureState.buffer = '';
+        this.captureState.startedAt = new Date();
+    }
+
+    _bufferCommandOutput(text) {
+        if (!this.captureState.active || !text) return;
+        this.captureState.buffer += text;
+    }
+
+    _handleExitCodeSequence(exitCodeStr, cmdB64) {
+        const exitCode = Number.parseInt(exitCodeStr, 10);
+        const command = this._decodeCommandSafe(cmdB64);
+
+        if (!Number.isNaN(exitCode) && exitCode !== 0) {
+            const printable = command ?? '<unknown>';
+            console.log(
+                `[Terminal Error] Exit Code: ${exitCode} | Command: "${printable}"`
+            );
+        }
+
+        this._finalizeCommandCapture(
+            Number.isNaN(exitCode) ? null : exitCode,
+            command
+        );
+    }
+
+    _decodeCommandSafe(encoded) {
+        if (!encoded) return null;
+        try {
+            const decoded = Buffer.from(encoded, 'base64').toString('utf8').trim();
+            return decoded || null;
+        } catch (err) {
+            console.error('[Terminal Error] Failed to decode command:', err);
+            return null;
+        }
+    }
+
+    _finalizeCommandCapture(exitCode, command) {
+        const hasData =
+            this.captureState.active || this.captureState.buffer.length > 0;
+        if (!hasData) {
+            this.captureState.active = false;
+            this.captureState.buffer = '';
+            this.captureState.startedAt = null;
+            return;
+        }
+
+        const completedAt = new Date();
+        const entry = {
+            command,
+            exitCode,
+            output: this.captureState.buffer,
+            startedAt: this.captureState.startedAt ?? completedAt,
+            completedAt,
+        };
+
+        this.lastExecution = entry;
+        this._logCommandExecution(entry);
+        this._resetCaptureState();
+    }
+
+    _resetCaptureState() {
+        this.captureState.active = false;
+        this.captureState.buffer = '';
+        this.captureState.startedAt = null;
+    }
+
+    _logCommandExecution(entry) {
+        const durationMs =
+            entry.startedAt && entry.completedAt
+                ? entry.completedAt.getTime() - entry.startedAt.getTime()
+                : null;
+        console.log('[Terminal Execution]', {
+            command: entry.command ?? null,
+            exitCode: entry.exitCode ?? null,
+            startedAt: entry.startedAt?.toISOString() ?? null,
+            completedAt: entry.completedAt?.toISOString() ?? null,
+            durationMs,
+            output: entry.output,
+        });
     }
 
     _broadcast(message) {
