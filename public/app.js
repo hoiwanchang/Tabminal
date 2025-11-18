@@ -274,7 +274,10 @@ class EditorManager {
         this.resizer.style.display = state.isVisible ? 'block' : 'none';
         
         if (state.isVisible) {
-            this.refreshSessionTree(this.currentSession);
+            // Only render if empty (first open)
+            if (this.currentSession.fileTreeElement && this.currentSession.fileTreeElement.children.length === 0) {
+                this.refreshSessionTree(this.currentSession);
+            }
             this.renderEditorTabs();
             if (state.activeFilePath) {
                 this.activateTab(state.activeFilePath, true);
@@ -305,27 +308,27 @@ class EditorManager {
             return;
         }
 
+        const state = session.editorState;
+        this.pane.style.display = state.isVisible ? 'flex' : 'none';
+        this.resizer.style.display = state.isVisible ? 'block' : 'none';
+
+        // Only render tabs and content, file tree is persistent in sidebar
+        if (state.isVisible) {
+            this.renderEditorTabs();
+            if (state.activeFilePath) {
+                this.activateTab(state.activeFilePath, true);
+            } else {
+                this.showEmptyState();
+            }
+            this.layout();
+        }
+        
         // Restore layout
         if (session.layoutState) {
             this.pane.style.flex = session.layoutState.editorFlex;
         } else {
             this.pane.style.flex = '2 1 0%';
         }
-
-        const state = session.editorState;
-        this.pane.style.display = state.isVisible ? 'flex' : 'none';
-        this.resizer.style.display = state.isVisible ? 'block' : 'none';
-
-        if (state.isVisible) {
-            this.refreshSessionTree(session);
-            this.renderEditorTabs();
-            if (state.activeFilePath) {
-                this.activateTab(state.activeFilePath, true);
-            }
-        } else {
-            this.showEmptyState();
-        }
-        this.layout();
     }
 
     layout() {
