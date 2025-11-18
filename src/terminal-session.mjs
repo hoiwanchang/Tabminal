@@ -354,7 +354,7 @@ export class TerminalSession {
                 return fallbackIdx;
             }
         }
-        return -1;
+        return this._findCommandIndexBySimulation(text, target);
     }
 
     _normalizeCommandEcho(text, command) {
@@ -423,6 +423,69 @@ export class TerminalSession {
             return text.length;
         }
         return start + 2;
+    }
+
+    _trimLineToCommand(line, command) {
+        if (!command) return line;
+        const target = command.trim();
+        if (!target) return line;
+        const idx = line.indexOf(target);
+        if (idx >= 0) {
+            return line.slice(idx);
+        }
+        return line;
+    }
+
+    _findCommandIndexBySimulation(text, target) {
+        if (!target) return -1;
+        let line = '';
+        let indices = [];
+        let i = 0;
+        while (i < text.length) {
+            const ch = text[i];
+            if (ch === '\x1b') {
+                i = this._skipAnsiSequence(text, i);
+                continue;
+            }
+            if (ch === '\b' || ch === '\x08' || ch === '\x7f') {
+                if (line.length > 0) {
+                    line = line.slice(0, -1);
+                    indices.pop();
+                }
+                i += 1;
+                continue;
+            }
+            if (ch === '\r' || ch === '\n') {
+                const idx = this._matchTargetAtLineEnd(line, target);
+                if (idx >= 0) {
+                    return indices[idx];
+                }
+                line = '';
+                indices = [];
+                i += 1;
+                continue;
+            }
+            line += ch;
+            indices.push(i);
+            i += 1;
+        }
+        const idx = this._matchTargetAtLineEnd(line, target);
+        if (idx >= 0) {
+            return indices[idx];
+        }
+        return -1;
+    }
+
+    _matchTargetAtLineEnd(line, target) {
+        if (!line) return -1;
+        const idx = line.lastIndexOf(target);
+        if (idx >= 0) {
+            const suffix = line.slice(idx + target.length).trim();
+            if (suffix === '') {
+                return idx;
+            }
+        }
+        return -1;
     }
 
     _trimLineToCommand(line, command) {
