@@ -396,8 +396,7 @@ body {
     cursor: row-resize;
     width: 100%;
     flex-shrink: 0;
-    border-top: 2px solid transparent;
-    border-bottom: 2px solid transparent;
+    border-bottom: 4px solid transparent;
     background-clip: content-box;
 }
 
