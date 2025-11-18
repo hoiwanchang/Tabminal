@@ -36,7 +36,7 @@ body {
 .sidebar {
     display: flex;
     flex-direction: column;
-    width: 260px;
+    width: 220px;
     flex-shrink: 0;
     background-color: var(--bg-base);
     padding: 10px;
@@ -649,12 +649,12 @@ body {
     overflow: auto;
     padding: 4px 0;
     font-size: 11px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: none;
     max-height: 300px;
     display: none;
-    background-color: var(--bg-base);
-    margin: 0 4px 4px 4px; /* Inset slightly */
-    border-radius: 4px;
+    background-color: transparent;
+    margin: 0;
+    border-radius: 0;
 }
 
 .tab-item.editor-open .tab-file-tree {
