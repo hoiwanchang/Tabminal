@@ -437,7 +437,7 @@ body {
     flex-grow: 1;
     overflow: auto; /* Allow both scroll */
     padding: 8px 0;
-    font-size: 0.85rem;
+    font-size: 12px;
 }
 
 .file-tree ul {
@@ -456,14 +456,13 @@ body {
 }
 
 .file-tree-item {
-    padding: 4px 12px;
+    padding: 2px 12px;
     cursor: pointer;
     display: flex;
     align-items: center;
     gap: 6px;
     color: var(--text-base);
     white-space: nowrap;
-    /* Removed overflow: hidden and text-overflow: ellipsis */
     min-width: 100%; /* Ensure background covers full width */
     width: fit-content; /* Allow width to grow */
 }
