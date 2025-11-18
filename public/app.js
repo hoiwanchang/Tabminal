@@ -226,6 +226,22 @@ class EditorManager {
                 scrollBeyondLastLine: false,
             });
             
+            this.editor.onDidChangeModelContent(() => {
+                if (!this.currentSession) return;
+                const filePath = this.currentSession.editorState.activeFilePath;
+                if (!filePath) return;
+                
+                if (this.saveFileTimer) clearTimeout(this.saveFileTimer);
+                this.saveFileTimer = setTimeout(() => {
+                    const content = this.editor.getValue();
+                    auth.fetch('/api/fs/write', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: filePath, content })
+                    });
+                }, 1000);
+            });
+            
             monaco.editor.defineTheme('solarized-dark', {
                 base: 'vs-dark',
                 inherit: true,
@@ -300,6 +316,7 @@ class EditorManager {
         }
         
         this.updateEditorPaneVisibility();
+        this.currentSession.saveState();
     }
 
     switchTo(session) {
@@ -361,9 +378,15 @@ class EditorManager {
                 div.className = 'file-tree-item';
                 if (file.isDirectory) div.classList.add('is-dir');
                 
+                let isExpanded = false;
+                if (file.isDirectory && globalExpandedPaths.has(file.path)) {
+                    isExpanded = true;
+                    li.classList.add('expanded');
+                }
+
                 const icon = document.createElement('span');
                 icon.className = 'icon';
-                icon.innerHTML = this.getIcon(file.name, file.isDirectory, false);
+                icon.innerHTML = this.getIcon(file.name, file.isDirectory, isExpanded);
                 
                 const name = document.createElement('span');
                 name.textContent = file.name;
@@ -376,13 +399,19 @@ class EditorManager {
                     if (file.isDirectory) {
                         if (li.classList.contains('expanded')) {
                             li.classList.remove('expanded');
+                            globalExpandedPaths.delete(file.path);
+                            auth.fetch('/api/memory/expand', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: file.path, expanded: false }) });
+                            
                             icon.innerHTML = this.getIcon(file.name, true, false);
                             const childUl = li.querySelector('ul');
                             if (childUl) childUl.remove();
                         } else {
                             li.classList.add('expanded');
+                            globalExpandedPaths.add(file.path);
+                            auth.fetch('/api/memory/expand', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ path: file.path, expanded: true }) });
+                            
                             icon.innerHTML = this.getIcon(file.name, true, true);
-                            await this.renderTree(file.path, li);
+                            await this.renderTree(file.path, li, session);
                         }
                     } else {
                         this.openFile(file.path);
@@ -390,6 +419,11 @@ class EditorManager {
                 });
 
                 li.appendChild(div);
+                
+                if (isExpanded) {
+                    this.renderTree(file.path, li, session);
+                }
+
                 ul.appendChild(li);
             }
             container.appendChild(ul);
@@ -441,6 +475,7 @@ class EditorManager {
         }
 
         this.activateTab(filePath);
+        this.currentSession.saveState();
     }
 
     closeFile(filePath) {
@@ -454,6 +489,7 @@ class EditorManager {
 
         this.renderEditorTabs();
         this.updateEditorPaneVisibility();
+        this.currentSession.saveState();
         
         if (state.activeFilePath === filePath) {
             if (state.openFiles.length > 0) {
@@ -507,13 +543,14 @@ class EditorManager {
         }
 
         state.activeFilePath = filePath;
+        this.currentSession.saveState();
         const file = this.globalModels.get(filePath);
         
         this.renderEditorTabs();
         this.emptyState.style.display = 'none';
 
         if (!file) {
-            this.showEmptyState();
+            this.openFile(filePath, true);
             return;
         }
 
@@ -585,22 +622,15 @@ class Session {
         this.env = data.env || '';
         this.cols = data.cols || 80;
         this.rows = data.rows || 24;
+        
+        this.saveStateTimer = null;
 
-        this.history = '';
-        this.socket = null;
-        this.reconnectAttempts = 0;
-        this.shouldReconnect = true;
-        this.retryTimer = null;
-        this.isRestoring = false;
-
-        // Editor State (Per Session)
         this.editorState = {
-            isVisible: false,
+            isVisible: data.editorState?.isVisible || false,
             root: this.cwd,
-            openFiles: [], // Array of paths
-            activeFilePath: null,
-            viewStates: new Map(), // Path -> ViewState
-            expandedPaths: new Set() // Set of expanded directory paths
+            openFiles: data.editorState?.openFiles || [],
+            activeFilePath: data.editorState?.activeFilePath || null,
+            viewStates: new Map() // Path -> ViewState
         };
         
         this.layoutState = {
@@ -740,6 +770,24 @@ class Session {
             metaEl.textContent = `PWD: ${shortened}`;
             metaEl.title = this.cwd;
         }
+    }
+
+    saveState() {
+        if (this.saveStateTimer) clearTimeout(this.saveStateTimer);
+        this.saveStateTimer = setTimeout(() => {
+            auth.fetch(`/api/sessions/${this.id}/state`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    editorState: {
+                        isVisible: this.editorState.isVisible,
+                        root: this.editorState.root,
+                        openFiles: this.editorState.openFiles,
+                        activeFilePath: this.editorState.activeFilePath
+                    }
+                })
+            });
+        }, 1000);
     }
 
     connect() {
@@ -914,13 +962,30 @@ const state = {
     activeSessionId: null
 };
 
+const globalExpandedPaths = new Set();
+
+async function fetchExpandedPaths() {
+    try {
+        const res = await auth.fetch('/api/memory/expanded');
+        if (res.ok) {
+            const list = await res.json();
+            // console.log('[Memory] Fetched expanded paths:', list);
+            globalExpandedPaths.clear();
+            list.forEach(p => globalExpandedPaths.add(p));
+        }
+    } catch (e) { console.error(e); }
+}
+
 async function syncSessions() {
     if (!auth.isAuthenticated) return;
+
+    await fetchExpandedPaths();
 
     try {
         const response = await auth.fetch('/api/heartbeat');
         if (!response.ok) return;
         const data = await response.json();
+        // console.log('[Frontend] Heartbeat data:', data);
         
         const sessions = Array.isArray(data) ? data : data.sessions;
         const system = data.system;

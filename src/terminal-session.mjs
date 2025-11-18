@@ -33,6 +33,9 @@ export class TerminalSession {
             .map(([key, value]) => `${key}=${value}`)
             .join('\n');
         
+        this.editorState = options.editorState || {};
+        console.log(`[Session] Initialized ${this.id} editorState:`, JSON.stringify(this.editorState));
+
         this.historyLimit = Math.max(1, options.historyLimit ?? DEFAULT_HISTORY_LIMIT);
         this.history = '';
         this.clients = new Set();
@@ -248,6 +251,9 @@ export class TerminalSession {
         if (this.closed) return;
         this.pty.resize(cols, rows);
         this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols, rows });
+        if (this.manager && this.manager.saveSessionState) {
+            this.manager.saveSessionState(this);
+        }
     }
 
     _routeIncoming(raw, ws) {

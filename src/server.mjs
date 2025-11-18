@@ -3,10 +3,12 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'node:http';
 import net from 'node:net';
+import fsPromises from 'node:fs/promises';
 
 import Koa from 'koa';
 import serve from 'koa-static';
 import Router from '@koa/router';
+import bodyParser from 'koa-bodyparser';
 import { WebSocketServer } from 'ws';
 
 import { TerminalManager } from './terminal-manager.mjs';
@@ -14,6 +16,7 @@ import { SystemMonitor } from './system-monitor.mjs';
 import { config } from './config.mjs';
 import { authMiddleware, verifyClient } from './auth.mjs';
 import { setupFsRoutes } from './fs-routes.mjs';
+import * as persistence from './persistence.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,12 +46,27 @@ router.get('/healthz', (ctx) => {
 // Serve static files (public) BEFORE auth middleware
 app.use(serve(publicDir));
 
+// Body Parser
+app.use(bodyParser());
+
 // Auth Middleware for API routes
 app.use(authMiddleware);
 
 const systemMonitor = new SystemMonitor();
 const terminalManager = new TerminalManager();
-terminalManager.ensureOneSession();
+
+// Restore sessions
+(async () => {
+    const restoredSessions = await persistence.loadSessions();
+    if (restoredSessions.length > 0) {
+        console.log(`[Server] Restoring ${restoredSessions.length} sessions...`);
+        for (const data of restoredSessions) {
+            terminalManager.createSession(data);
+        }
+    } else {
+        terminalManager.ensureOneSession();
+    }
+})();
 
 // Setup FS Routes
 setupFsRoutes(router);
@@ -80,6 +98,47 @@ router.delete('/api/sessions/:id', (ctx) => {
     const { id } = ctx.params;
     terminalManager.removeSession(id);
     ctx.status = 204;
+});
+
+router.post('/api/sessions/:id/state', async (ctx) => {
+    const { id } = ctx.params;
+    const data = ctx.request.body;
+    terminalManager.updateSessionState(id, data);
+    ctx.status = 200;
+});
+
+// File Save
+router.post('/api/fs/write', async (ctx) => {
+    const { path: filePath, content } = ctx.request.body;
+    if (!filePath || content === undefined) {
+        ctx.status = 400;
+        return;
+    }
+    try {
+        await fsPromises.writeFile(filePath, content, 'utf-8');
+        ctx.status = 200;
+    } catch (err) {
+        console.error('FS Write Error:', err);
+        ctx.status = 500;
+        ctx.body = { error: err.message };
+    }
+});
+
+// Memory: Expand/Collapse
+router.post('/api/memory/expand', async (ctx) => {
+    const { path: folderPath, expanded } = ctx.request.body;
+    console.log('[API] Expand:', folderPath, expanded);
+    if (!folderPath) {
+        ctx.status = 400;
+        return;
+    }
+    const list = await persistence.updateExpandedFolder(folderPath, expanded);
+    ctx.body = list;
+});
+
+router.get('/api/memory/expanded', async (ctx) => {
+    const list = await persistence.getExpandedFolders();
+    ctx.body = list;
 });
 
 // Middleware

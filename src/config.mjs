@@ -34,8 +34,18 @@ function sha256(input) {
 }
 
 function loadConfig() {
-    // 1. Load from ~/.tabminal.json
-    const homeConfigPath = path.join(os.homedir(), '.tabminal.json');
+    // 1. Load from ~/.tabminal/config.json
+    const configDir = path.join(os.homedir(), '.tabminal');
+    const homeConfigPath = path.join(configDir, 'config.json');
+    
+    try {
+        if (!fs.existsSync(configDir)) {
+            fs.mkdirSync(configDir, { recursive: true });
+        }
+    } catch (e) {
+        console.warn('[Config] Failed to create config directory:', e.message);
+    }
+
     const homeConfig = loadJson(homeConfigPath);
 
     // 2. Load from ./config.json

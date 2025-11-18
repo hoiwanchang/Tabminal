@@ -5,6 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import pty from 'node-pty';
 import { TerminalSession } from './terminal-session.mjs';
+import * as persistence from './persistence.mjs';
 
 function resolveShell() {
     if (process.platform === 'win32') {
@@ -34,10 +35,13 @@ export class TerminalManager {
         this.disposing = false;
     }
 
-    createSession() {
-        const id = crypto.randomUUID();
+    createSession(restoredData = null) {
+        const id = restoredData ? restoredData.id : crypto.randomUUID();
+        if (restoredData) {
+             console.log(`[Manager] Restoring session ${id} with editorState:`, JSON.stringify(restoredData.editorState));
+        }
         const shell = resolveShell();
-        const initialCwd = process.env.TABMINAL_CWD || process.cwd();
+        const initialCwd = restoredData ? restoredData.cwd : (process.env.TABMINAL_CWD || process.cwd());
         const env = { ...process.env }; // Clone env to modify it safely
 
         let args = [];
@@ -121,10 +125,13 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
             console.error('[Manager] Failed to create init script:', err);
         }
 
+        const cols = restoredData ? restoredData.cols : this.lastCols;
+        const rows = restoredData ? restoredData.rows : this.lastRows;
+
         const ptyProcess = pty.spawn(shell, args, {
             name: 'xterm-256color',
-            cols: this.lastCols,
-            rows: this.lastRows,
+            cols: cols,
+            rows: rows,
             cwd: initialCwd,
             env: env,
             encoding: 'utf8'
@@ -133,12 +140,16 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
         const session = new TerminalSession(ptyProcess, {
             id,
             historyLimit,
-            createdAt: new Date(),
+            createdAt: restoredData ? new Date(restoredData.createdAt) : new Date(),
             manager: this,
             shell,
             initialCwd,
-            env: env
+            env: env,
+            editorState: restoredData ? restoredData.editorState : undefined
         });
+
+        // Initial save
+        this.saveSessionState(session);
 
         ptyProcess.onExit(() => {
             this.removeSession(id);
@@ -152,6 +163,30 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
         this.sessions.set(id, session);
         console.log(`[Manager] Created session ${id}`);
         return session;
+    }
+
+    saveSessionState(session) {
+        persistence.saveSession(session.id, {
+            id: session.id,
+            title: session.title,
+            cwd: session.cwd,
+            env: session.env,
+            cols: session.pty.cols,
+            rows: session.pty.rows,
+            createdAt: session.createdAt,
+            editorState: session.editorState
+        });
+    }
+
+    updateSessionState(id, data) {
+        const session = this.sessions.get(id);
+        if (session) {
+            // console.log(`[Manager] Updating session ${id} state:`, JSON.stringify(data));
+            if (data.editorState) {
+                session.editorState = { ...session.editorState, ...data.editorState };
+            }
+            this.saveSessionState(session);
+        }
     }
 
     getSession(id) {
@@ -177,6 +212,7 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
         if (session) {
             session.dispose();
             this.sessions.delete(id);
+            persistence.deleteSession(id);
             console.log(`[Manager] Removed session ${id}`);
             // If the last session is closed, create a new one automatically
             if (this.sessions.size === 0 && !this.disposing) {
@@ -196,7 +232,8 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
             cwd: s.cwd,
             env: s.env,
             cols: s.pty.cols,
-            rows: s.pty.rows
+            rows: s.pty.rows,
+            editorState: s.editorState
         }));
     }
 
