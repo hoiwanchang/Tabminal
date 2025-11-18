@@ -385,18 +385,20 @@ body {
     flex: 2 1 0%; /* Strictly 2 parts */
     display: flex;
     flex-direction: column;
-    border-bottom: 1px solid var(--border-color);
     background-color: var(--bg-base);
     min-height: 200px;
     position: relative;
 }
 
 .editor-resizer {
-    height: 4px;
-    background-color: var(--bg-surface);
+    height: 5px;
+    background-color: var(--border-color);
     cursor: row-resize;
     width: 100%;
     flex-shrink: 0;
+    border-top: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    background-clip: content-box;
 }
 
 .editor-resizer:hover {
