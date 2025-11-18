@@ -31,6 +31,7 @@ export class TerminalManager {
         this.sessions = new Map();
         this.lastCols = initialCols;
         this.lastRows = initialRows;
+        this.disposing = false;
     }
 
     createSession() {
@@ -66,7 +67,6 @@ _tabminal_bash_postexec() {
     printf "\\x1b]1337;ExitCode=%s;CommandB64=%s\\x07" "$EC" "$CMD"
     _tabminal_last_command="" # Reset after use
   fi
-  printf "\\x1b]1337;P_END\\x07"
 }
 if [[ -n "$PROMPT_COMMAND" ]]; then
   printf -v PROMPT_COMMAND "_tabminal_bash_postexec; %s" "$PROMPT_COMMAND"
@@ -96,7 +96,6 @@ _tabminal_zsh_postexec() {
     printf "\\x1b]1337;ExitCode=%s;CommandB64=%s\\x07" "$EC" "$CMD"
   fi
   _tabminal_last_command="" # Reset after use
-  printf "\\x1b]1337;P_END\\x07"
 }
 preexec_functions+=(_tabminal_zsh_preexec)
 precmd_functions+=(_tabminal_zsh_postexec)
@@ -167,7 +166,7 @@ precmd_functions+=(_tabminal_zsh_postexec)
             this.sessions.delete(id);
             console.log(`[Manager] Removed session ${id}`);
             // If the last session is closed, create a new one automatically
-            if (this.sessions.size === 0) {
+            if (this.sessions.size === 0 && !this.disposing) {
                 console.log('[Manager] No sessions left, creating a new one.');
                 this.createSession();
             }
@@ -198,9 +197,10 @@ precmd_functions+=(_tabminal_zsh_postexec)
 
     dispose() {
         console.log('[Manager] Disposing all sessions.');
+        this.disposing = true;
         for (const session of this.sessions.values()) {
             try {
-                session.pty.kill('SIGTERM');
+                session.pty.kill('SIGHUP');
             } catch (_err) {
                 // ignore
             }

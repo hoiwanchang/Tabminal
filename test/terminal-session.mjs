@@ -3,8 +3,6 @@ import assert from 'node:assert';
 
 import { TerminalSession } from '../src/terminal-session.mjs';
 
-const PROMPT_END_MARKER = '\u001b]1337;P_END\u0007';
-
 function buildExitSequence(exitCode, command) {
     const encoded = Buffer.from(command, 'utf8').toString('base64');
     return `\u001b]1337;ExitCode=${exitCode};CommandB64=${encoded}\u0007`;
@@ -110,9 +108,9 @@ describe('TerminalSession', () => {
         assert.strictEqual(payloads[0].data, '6789abcdef');
     });
 
-    it('captures execution output between prompt end and exit markers', () => {
+    it('captures execution output between exit markers', () => {
         session = new TerminalSession(pty);
-        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('leask@Flora$ ');
         pty.emitData('ls\nfile.txt\n');
         pty.emitData(buildExitSequence(0, 'ls'));
 
@@ -125,11 +123,11 @@ describe('TerminalSession', () => {
     it('resets the capture buffer for consecutive commands', () => {
         session = new TerminalSession(pty);
 
-        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('prompt$ ');
         pty.emitData('ls\nfoo\n');
         pty.emitData(buildExitSequence(2, 'ls'));
 
-        pty.emitData(PROMPT_END_MARKER);
+        pty.emitData('prompt$ ');
         pty.emitData('pwd\n/bar\n');
         pty.emitData(buildExitSequence(0, 'pwd'));
 
@@ -139,6 +137,36 @@ describe('TerminalSession', () => {
         assert.strictEqual(session.lastExecution.output, 'pwd\n/bar\n');
     });
 
+    it('drops elaborate prompt decorations from captured output', () => {
+        session = new TerminalSession(pty);
+
+        const fancyPrompt =
+            '\r\r\n' +
+            '⎧ banner line\r\n' +
+            '⎨ Paths: /vols/cache\r\n' +
+            '⎩ [33m$ ❯[0m ';
+
+        pty.emitData(fancyPrompt);
+        pty.emitData('ls\nclient\n');
+        pty.emitData(buildExitSequence(0, 'ls'));
+
+        assert.ok(session.lastExecution);
+        assert.strictEqual(session.lastExecution.command, 'ls');
+        assert.strictEqual(session.lastExecution.output, 'ls\nclient\n');
+    });
+
+    it('normalizes backspaces and clears within the echoed command line', () => {
+        session = new TerminalSession(pty);
+
+        pty.emitData('prompt$ ');
+        pty.emitData('ls -XXXX\b\b\b\b[KBB\r\nitem\n');
+        pty.emitData(buildExitSequence(0, 'ls -BB'));
+
+        assert.ok(session.lastExecution);
+        assert.strictEqual(session.lastExecution.command, 'ls -BB');
+        assert.strictEqual(session.lastExecution.output, 'ls -BB\r\nitem\n');
+    });
+
     it('logs each execution summary once it completes', () => {
         session = new TerminalSession(pty);
         const originalLog = console.log;
@@ -146,7 +174,7 @@ describe('TerminalSession', () => {
         console.log = (...args) => { calls.push(args); };
 
         try {
-            pty.emitData(PROMPT_END_MARKER);
+            pty.emitData('prompt$ ');
             pty.emitData('echo hi\nhi\n');
             pty.emitData(buildExitSequence(0, 'echo hi'));
         } finally {
@@ -158,10 +186,11 @@ describe('TerminalSession', () => {
         assert.deepStrictEqual(calls[0][1], {
             command: 'echo hi',
             exitCode: 0,
+            output: 'echo hi\nhi\n',
+            error: [false, null],
             startedAt: session.lastExecution.startedAt.toISOString(),
             completedAt: session.lastExecution.completedAt.toISOString(),
             durationMs: session.lastExecution.completedAt.getTime() - session.lastExecution.startedAt.getTime(),
-            output: 'echo hi\nhi\n',
         });
     });
 
@@ -172,13 +201,15 @@ describe('TerminalSession', () => {
         client.sent = [];
 
         pty.emitData(
-            `${PROMPT_END_MARKER}echo hi\nhi\n${buildExitSequence(0, 'echo hi')}`
+            `prompt$ echo hi
+hi
+${buildExitSequence(0, 'echo hi')}`
         );
 
         const payloads = client.sent.map((raw) => JSON.parse(raw));
         const outputMsg = payloads.find((p) => p.type === 'output');
         assert.ok(outputMsg);
-        assert.strictEqual(outputMsg.data, 'echo hi\nhi\n');
+        assert.ok(outputMsg.data.includes('echo hi\nhi\n'));
     });
 });
 

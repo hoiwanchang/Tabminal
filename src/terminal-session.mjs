@@ -5,8 +5,8 @@ import AnsiParser from 'node-ansiparser';
 const execAsync = promisify(exec);
 const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
-const OSC1337_META_REGEX =
-    /\u001b\]1337;(?:ExitCode=(\d+);CommandB64=([a-zA-Z0-9+/=]+)|P_(START|END))\u0007/g;
+const EXIT_SEQUENCE_REGEX =
+    /\u001b\]1337;ExitCode=(\d+);CommandB64=([a-zA-Z0-9+/=]+)\u0007/g;
 
 export class TerminalSession {
     constructor(pty, options = {}) {
@@ -30,7 +30,8 @@ export class TerminalSession {
         this.clients = new Set();
         this.closed = false;
         this.pollingInterval = null;
-        this.captureState = { active: false, buffer: '', startedAt: null };
+        this.captureBuffer = '';
+        this.captureStartedAt = null;
         this.lastExecution = null;
 
         this.ansiParser = new AnsiParser({
@@ -61,33 +62,27 @@ export class TerminalSession {
 
             let cleaned = '';
             let lastIndex = 0;
-            OSC1337_META_REGEX.lastIndex = 0;
+            EXIT_SEQUENCE_REGEX.lastIndex = 0;
 
             let match;
-            while ((match = OSC1337_META_REGEX.exec(chunk)) !== null) {
+            while ((match = EXIT_SEQUENCE_REGEX.exec(chunk)) !== null) {
                 const plain = chunk.slice(lastIndex, match.index);
                 if (plain) {
                     cleaned += plain;
-                    this._bufferCommandOutput(plain);
+                    this._appendCapturedOutput(plain);
                 }
 
                 const exitCodeStr = match[1];
                 const cmdB64 = match[2];
-                const marker = match[3];
+                this._handleExitCodeSequence(exitCodeStr, cmdB64);
 
-                if (exitCodeStr !== undefined) {
-                    this._handleExitCodeSequence(exitCodeStr, cmdB64);
-                } else if (marker) {
-                    this._handlePromptMarker(marker);
-                }
-
-                lastIndex = OSC1337_META_REGEX.lastIndex;
+                lastIndex = EXIT_SEQUENCE_REGEX.lastIndex;
             }
 
             const tail = chunk.slice(lastIndex);
             if (tail) {
                 cleaned += tail;
-                this._bufferCommandOutput(tail);
+                this._appendCapturedOutput(tail);
             }
 
             if (!cleaned) return;
@@ -260,16 +255,12 @@ export class TerminalSession {
         }
     }
 
-    _handlePromptMarker(marker) {
-        if (marker !== 'END') return;
-        this.captureState.active = true;
-        this.captureState.buffer = '';
-        this.captureState.startedAt = new Date();
-    }
-
-    _bufferCommandOutput(text) {
-        if (!this.captureState.active || !text) return;
-        this.captureState.buffer += text;
+    _appendCapturedOutput(text) {
+        if (!text) return;
+        this.captureBuffer += text;
+        if (!this.captureStartedAt) {
+            this.captureStartedAt = new Date();
+        }
     }
 
     _handleExitCodeSequence(exitCodeStr, cmdB64) {
@@ -283,10 +274,19 @@ export class TerminalSession {
             );
         }
 
-        this._finalizeCommandCapture(
-            Number.isNaN(exitCode) ? null : exitCode,
-            command
-        );
+        const completedAt = new Date();
+        const entry = {
+            command,
+            exitCode: Number.isNaN(exitCode) ? null : exitCode,
+            output: this._sanitizeCapturedOutput(this.captureBuffer, command),
+            startedAt: this.captureStartedAt ?? completedAt,
+            completedAt,
+        };
+
+        this.lastExecution = entry;
+        this._logCommandExecution(entry);
+        this.captureBuffer = '';
+        this.captureStartedAt = null;
     }
 
     _decodeCommandSafe(encoded) {
@@ -300,34 +300,140 @@ export class TerminalSession {
         }
     }
 
-    _finalizeCommandCapture(exitCode, command) {
-        const hasData =
-            this.captureState.active || this.captureState.buffer.length > 0;
-        if (!hasData) {
-            this.captureState.active = false;
-            this.captureState.buffer = '';
-            this.captureState.startedAt = null;
-            return;
+    _sanitizeCapturedOutput(buffer, command) {
+        if (!buffer) return '';
+        let cleaned = buffer;
+        const idx = this._findCommandEchoIndex(cleaned, command);
+        if (idx >= 0) {
+            cleaned = cleaned.slice(idx);
         }
-
-        const completedAt = new Date();
-        const entry = {
-            command,
-            exitCode,
-            output: this.captureState.buffer,
-            startedAt: this.captureState.startedAt ?? completedAt,
-            completedAt,
-        };
-
-        this.lastExecution = entry;
-        this._logCommandExecution(entry);
-        this._resetCaptureState();
+        cleaned = this._normalizeCommandEcho(cleaned, command);
+        return cleaned.replace(/^[\r\n]+/, '');
     }
 
-    _resetCaptureState() {
-        this.captureState.active = false;
-        this.captureState.buffer = '';
-        this.captureState.startedAt = null;
+    _findCommandEchoIndex(text, command) {
+        if (!text || !command) return -1;
+        const target = command.trim();
+        if (!target) return -1;
+
+        let searchIndex = 0;
+        let bestIdx = -1;
+        while (searchIndex <= text.length) {
+            const idx = text.indexOf(target, searchIndex);
+            if (idx === -1) break;
+
+            const next = text[idx + target.length];
+            const nextTwo = text.slice(idx + target.length, idx + target.length + 2);
+            const followedByNewline =
+                next === '\r' ||
+                next === '\n' ||
+                nextTwo === '\r\n';
+            if (followedByNewline) {
+                const prev = idx > 0 ? text[idx - 1] : null;
+                const prevOk =
+                    prev === null ||
+                    prev === ' ' ||
+                    prev === '\t' ||
+                    prev === '\r' ||
+                    prev === '\n' ||
+                    prev === '$' ||
+                    prev === '>' ||
+                    prev === '❯' ||
+                    prev === ':' ||
+                    prev === '\x1b';
+                if (prevOk) bestIdx = idx;
+            }
+            searchIndex = idx + 1;
+        }
+        if (bestIdx >= 0) return bestIdx;
+
+        const fallbackIdx = text.lastIndexOf(target);
+        if (fallbackIdx >= 0) {
+            const tailLength = text.length - fallbackIdx;
+            if (tailLength <= 4096) {
+                return fallbackIdx;
+            }
+        }
+        return -1;
+    }
+
+    _normalizeCommandEcho(text, command) {
+        if (!text) return text;
+        const newlineIdx = text.search(/[\r\n]/);
+        if (newlineIdx < 0) {
+            return this._trimLineToCommand(this._normalizeSingleLine(text), command);
+        }
+        const normalizedLine = this._trimLineToCommand(
+            this._normalizeSingleLine(text.slice(0, newlineIdx)),
+            command
+        );
+        return normalizedLine + text.slice(newlineIdx);
+    }
+
+    _normalizeSingleLine(line) {
+        if (!line) return line;
+        let out = '';
+        for (let i = 0; i < line.length;) {
+            const ch = line[i];
+            if (ch === '\x08' || ch === '\b' || ch === '\x7f') {
+                out = out.slice(0, -1);
+                i += 1;
+                continue;
+            }
+            if (ch === '\x1b') {
+                i = this._skipAnsiSequence(line, i);
+                continue;
+            }
+            if (ch === '\r') {
+                i += 1;
+                continue;
+            }
+            out += ch;
+            i += 1;
+        }
+        return out;
+    }
+
+    _skipAnsiSequence(text, start) {
+        if (start + 1 >= text.length) return start + 1;
+        const code = text[start + 1];
+        if (code === '[') {
+            let idx = start + 2;
+            while (idx < text.length) {
+                const ch = text[idx];
+                if (ch >= '@' && ch <= '~') {
+                    return idx + 1;
+                }
+                idx += 1;
+            }
+            return text.length;
+        }
+        if (code === ']') {
+            let idx = start + 2;
+            while (idx < text.length) {
+                const ch = text[idx];
+                if (ch === '\x07') {
+                    return idx + 1;
+                }
+                if (ch === '\x1b' && text[idx + 1] === '\\') {
+                    return idx + 2;
+                }
+                idx += 1;
+            }
+            return text.length;
+        }
+        return start + 2;
+    }
+
+    _trimLineToCommand(line, command) {
+        if (!command) return line;
+        const target = command.trim();
+        if (!target) return line;
+        const idx = line.indexOf(target);
+        if (idx >= 0) {
+            return line.slice(idx);
+        }
+        return line;
     }
 
     _logCommandExecution(entry) {
@@ -335,13 +441,15 @@ export class TerminalSession {
             entry.startedAt && entry.completedAt
                 ? entry.completedAt.getTime() - entry.startedAt.getTime()
                 : null;
+        const hadError = entry.exitCode !== null && entry.exitCode !== 0;
         console.log('[Terminal Execution]', {
             command: entry.command ?? null,
             exitCode: entry.exitCode ?? null,
+            output: entry.output,
+            error: [hadError, hadError ? `exit code ${entry.exitCode}` : null],
             startedAt: entry.startedAt?.toISOString() ?? null,
             completedAt: entry.completedAt?.toISOString() ?? null,
             durationMs,
-            output: entry.output,
         });
     }
 
