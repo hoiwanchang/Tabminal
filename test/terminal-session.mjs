@@ -159,6 +159,23 @@ describe('TerminalSession', () => {
         assert.strictEqual(session.lastExecution.output, 'client\n');
     });
 
+    it('captures multi-line commands that use continuation prompts', () => {
+        session = new TerminalSession(pty);
+
+        pty.emitData('prompt$ ' + PROMPT_MARKER);
+        const multiLineInput =
+            'echo first \\\r\n' +
+            '> second \\\r\n' +
+            '> third\r\n';
+        pty.emitData(multiLineInput + 'first second third\n');
+        pty.emitData(buildExitSequence(0, 'echo first second third'));
+
+        assert.ok(session.lastExecution);
+        assert.strictEqual(session.lastExecution.command, 'echo first second third');
+        assert.strictEqual(session.lastExecution.input, multiLineInput);
+        assert.strictEqual(session.lastExecution.output, 'first second third\n');
+    });
+
     it('normalizes backspaces and clears within the echoed command line', () => {
         session = new TerminalSession(pty);
 
