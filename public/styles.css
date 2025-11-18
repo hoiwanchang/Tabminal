@@ -396,7 +396,7 @@ body {
 }
 
 .editor-resizer {
-    height: 6px;
+    height: 10px;
     background-color: transparent;
     cursor: row-resize;
     width: 100%;
@@ -404,7 +404,7 @@ body {
     z-index: 999;
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     border: none;
 }
