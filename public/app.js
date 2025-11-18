@@ -229,7 +229,7 @@ class EditorManager {
                 minimap: { enabled: true },
                 rulers: [80, 120],
                 fontSize: 12,
-                fontFamily: '"SF Mono Terminal", "SFMono-Regular", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace',
+                fontFamily: "'Monaspace Neon', \"SF Mono Terminal\", \"SFMono-Regular\", \"SF Mono\", \"JetBrains Mono\", Menlo, Consolas, monospace",
                 scrollBeyondLastLine: false,
             });
             
@@ -662,7 +662,7 @@ class Session {
             allowTransparency: true,
             convertEol: true,
             cursorBlink: true,
-            fontFamily: '"SF Mono Terminal", "SFMono-Regular", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace',
+            fontFamily: "'Monaspace Neon', \"SF Mono Terminal\", \"SFMono-Regular\", \"SF Mono\", \"JetBrains Mono\", Menlo, Consolas, monospace",
             fontSize: 12,
             rows: this.rows,
             cols: this.cols,
