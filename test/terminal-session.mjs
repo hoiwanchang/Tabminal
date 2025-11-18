@@ -118,7 +118,8 @@ describe('TerminalSession', () => {
         assert.ok(session.lastExecution);
         assert.strictEqual(session.lastExecution.command, 'ls');
         assert.strictEqual(session.lastExecution.exitCode, 0);
-        assert.strictEqual(session.lastExecution.output, 'ls\nfile.txt\n');
+        assert.strictEqual(session.lastExecution.input, 'ls\n');
+        assert.strictEqual(session.lastExecution.output, 'file.txt\n');
     });
 
     it('resets the capture buffer for consecutive commands', () => {
@@ -135,7 +136,8 @@ describe('TerminalSession', () => {
         assert.ok(session.lastExecution);
         assert.strictEqual(session.lastExecution.command, 'pwd');
         assert.strictEqual(session.lastExecution.exitCode, 0);
-        assert.strictEqual(session.lastExecution.output, 'pwd\n/bar\n');
+        assert.strictEqual(session.lastExecution.input, 'pwd\n');
+        assert.strictEqual(session.lastExecution.output, '/bar\n');
     });
 
     it('drops elaborate prompt decorations from captured output', () => {
@@ -153,7 +155,8 @@ describe('TerminalSession', () => {
 
         assert.ok(session.lastExecution);
         assert.strictEqual(session.lastExecution.command, 'ls');
-        assert.strictEqual(session.lastExecution.output, 'ls\nclient\n');
+        assert.strictEqual(session.lastExecution.input.includes('ls'), true);
+        assert.strictEqual(session.lastExecution.output, 'client\n');
     });
 
     it('normalizes backspaces and clears within the echoed command line', () => {
@@ -165,7 +168,8 @@ describe('TerminalSession', () => {
 
         assert.ok(session.lastExecution);
         assert.strictEqual(session.lastExecution.command, 'ls -BB');
-        assert.strictEqual(session.lastExecution.output, 'ls -BB\r\nitem\n');
+        assert.strictEqual(session.lastExecution.input, 'ls -BB\r\n');
+        assert.strictEqual(session.lastExecution.output, 'item\n');
     });
 
     it('logs each execution summary once it completes', () => {
@@ -187,11 +191,11 @@ describe('TerminalSession', () => {
         assert.deepStrictEqual(calls[0][1], {
             command: 'echo hi',
             exitCode: 0,
-            output: 'echo hi\nhi\n',
-            error: [false, null],
+            input: 'echo hi\n',
+            output: 'hi\n',
             startedAt: session.lastExecution.startedAt.toISOString(),
             completedAt: session.lastExecution.completedAt.toISOString(),
-            durationMs: session.lastExecution.completedAt.getTime() - session.lastExecution.startedAt.getTime(),
+            duration: session.lastExecution.completedAt.getTime() - session.lastExecution.startedAt.getTime(),
         });
     });
 

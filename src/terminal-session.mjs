@@ -278,18 +278,13 @@ export class TerminalSession {
         const exitCode = Number.parseInt(exitCodeStr, 10);
         const command = this._decodeCommandSafe(cmdB64);
 
-        if (!Number.isNaN(exitCode) && exitCode !== 0) {
-            const printable = command ?? '<unknown>';
-            console.log(
-                `[Terminal Error] Exit Code: ${exitCode} | Command: "${printable}"`
-            );
-        }
-
         const completedAt = new Date();
         const entry = {
             command,
             exitCode: Number.isNaN(exitCode) ? null : exitCode,
-            output: this._sanitizeCapturedOutput(this.captureBuffer, command),
+            ...this._splitInputOutput(
+                this._sanitizeCapturedOutput(this.captureBuffer, command)
+            ),
             startedAt: this.captureStartedAt ?? completedAt,
             completedAt,
         };
@@ -447,6 +442,76 @@ export class TerminalSession {
         return line;
     }
 
+    _splitInputOutput(text) {
+        if (!text) {
+            return { input: '', output: '' };
+        }
+        const segments = [];
+        const newlineRegex = /\r\n|\r|\n/g;
+        let lastIndex = 0;
+        let match;
+        while ((match = newlineRegex.exec(text)) !== null) {
+            const lineEnd = match.index;
+            const newlineSeq = match[0];
+            segments.push({
+                raw: text.slice(lastIndex, newlineRegex.lastIndex),
+                plain: text.slice(lastIndex, lineEnd)
+            });
+            lastIndex = newlineRegex.lastIndex;
+        }
+        if (lastIndex < text.length) {
+            segments.push({
+                raw: text.slice(lastIndex),
+                plain: text.slice(lastIndex)
+            });
+        }
+
+        if (segments.length === 0) {
+            return { input: text, output: '' };
+        }
+
+        let inputLength = segments[0].raw.length;
+        for (let i = 1; i < segments.length; i++) {
+            const plain = this._stripAnsi(segments[i].plain);
+            const trimmed = plain.trimStart();
+            if (trimmed === '') {
+                inputLength += segments[i].raw.length;
+                break;
+            }
+            if (this._looksLikeContinuationLine(trimmed)) {
+                inputLength += segments[i].raw.length;
+                continue;
+            }
+            break;
+        }
+
+        return {
+            input: text.slice(0, inputLength),
+            output: text.slice(inputLength)
+        };
+    }
+
+    _looksLikeContinuationLine(value) {
+        if (!value) return false;
+        const lower = value.toLowerCase();
+        return (
+            lower.startsWith('>') ||
+            lower.startsWith('+') ||
+            lower.startsWith('quote>') ||
+            lower.startsWith('heredoc>') ||
+            lower.startsWith('ps2>') ||
+            lower.startsWith('?')
+        );
+    }
+
+    _stripAnsi(value) {
+        if (!value) return value;
+        return value.replace(
+            /\u001b\[[0-9;?]*[ -\/]*[@-~]/g,
+            ''
+        );
+    }
+
     _findCommandIndexBySimulation(text, target) {
         if (!target) return -1;
         let line = '';
@@ -511,19 +576,18 @@ export class TerminalSession {
     }
 
     _logCommandExecution(entry) {
-        const durationMs =
+        const duration =
             entry.startedAt && entry.completedAt
                 ? entry.completedAt.getTime() - entry.startedAt.getTime()
                 : null;
-        const hadError = entry.exitCode !== null && entry.exitCode !== 0;
         console.log('[Terminal Execution]', {
             command: entry.command ?? null,
             exitCode: entry.exitCode ?? null,
+            input: entry.input,
             output: entry.output,
-            error: [hadError, hadError ? `exit code ${entry.exitCode}` : null],
             startedAt: entry.startedAt?.toISOString() ?? null,
             completedAt: entry.completedAt?.toISOString() ?? null,
-            durationMs,
+            duration: duration ?? null,
         });
     }
 

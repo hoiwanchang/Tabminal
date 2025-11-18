@@ -47,7 +47,8 @@ test("captures real shell output without prompt noise", async () => {
         await waitForInitialExecution(session);
         const entry = await runCommand(session, "echo __TABMINAL_CAPTURE__");
         assert.strictEqual(entry.command.trim(), "echo __TABMINAL_CAPTURE__");
-        assert.ok(entry.output.startsWith("echo __TABMINAL_CAPTURE__"));
+        assert.ok(entry.input.startsWith("echo __TABMINAL_CAPTURE__"));
+        assert.ok(entry.output.startsWith("__TABMINAL_CAPTURE__"));
         assertNoPromptArtifacts(entry.output);
     } finally {
         manager.dispose();
