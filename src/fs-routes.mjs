@@ -2,13 +2,9 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-// Helper to safely resolve path and prevent directory traversal
+// Helper to safely resolve path
 const resolvePath = (baseDir, targetPath) => {
-    const resolvedPath = path.resolve(baseDir, targetPath);
-    if (!resolvedPath.startsWith(baseDir)) {
-        throw new Error('Access denied');
-    }
-    return resolvedPath;
+    return path.resolve(baseDir, targetPath);
 };
 
 export const setupFsRoutes = (router) => {

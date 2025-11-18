@@ -650,6 +650,13 @@ class Session {
         if (data.cwd && data.cwd !== this.cwd) {
             this.cwd = data.cwd;
             changed = true;
+            
+            if (this.editorState) {
+                this.editorState.root = this.cwd;
+                if (state.activeSessionId === this.id && this.editorState.isVisible) {
+                    editorManager.refreshFileTree(this.cwd);
+                }
+            }
         }
         if (data.env && data.env !== this.env) {
             this.env = data.env;

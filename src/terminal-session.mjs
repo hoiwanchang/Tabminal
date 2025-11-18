@@ -1,5 +1,6 @@
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import process from 'node:process';
 import AnsiParser from 'node-ansiparser';
 
 const execAsync = promisify(exec);
@@ -178,12 +179,32 @@ export class TerminalSession {
                     }
                 } catch (e) { /* ignore */ }
 
+                // Poll CWD
+                let newCwd = this.cwd;
+                try {
+                    if (process.platform === 'linux') {
+                        const { stdout } = await execAsync(`readlink /proc/${currentPid}/cwd`);
+                        newCwd = stdout.trim();
+                    } else if (process.platform === 'darwin') {
+                        const { stdout } = await execAsync(`lsof -a -p ${currentPid} -d cwd -F n`);
+                        const lines = stdout.trim().split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('n')) {
+                                newCwd = line.substring(1);
+                                break;
+                            }
+                        }
+                    }
+                } catch (e) { /* ignore */ }
+
                 const titleChanged = newTitle && newTitle !== this.title;
                 const envChanged = newEnv !== null && newEnv !== this.env;
+                const cwdChanged = newCwd && newCwd !== this.cwd;
 
-                if (titleChanged || envChanged) {
+                if (titleChanged || envChanged || cwdChanged) {
                     if (titleChanged) this.title = newTitle;
                     if (envChanged) this.env = newEnv;
+                    if (cwdChanged) this.cwd = newCwd;
                     this._broadcast({ type: 'meta', title: this.title, cwd: this.cwd, env: this.env, cols: this.pty.cols, rows: this.pty.rows });
                 }
             } catch (_err) { /* ignore */ }
