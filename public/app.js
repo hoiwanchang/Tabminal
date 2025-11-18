@@ -182,7 +182,11 @@ class EditorManager {
             const dy = e.clientY - startY;
             const newHeight = startHeight + dy;
             if (newHeight > 100 && newHeight < window.innerHeight - 100) {
-                this.pane.style.flex = `0 0 ${newHeight}px`;
+                const flex = `0 0 ${newHeight}px`;
+                this.pane.style.flex = flex;
+                if (this.currentSession) {
+                    this.currentSession.layoutState.editorFlex = flex;
+                }
                 this.layout();
             }
         };
@@ -299,6 +303,13 @@ class EditorManager {
             this.pane.style.display = 'none';
             this.resizer.style.display = 'none';
             return;
+        }
+
+        // Restore layout
+        if (session.layoutState) {
+            this.pane.style.flex = session.layoutState.editorFlex;
+        } else {
+            this.pane.style.flex = '2 1 0%';
         }
 
         const state = session.editorState;
@@ -576,6 +587,10 @@ class Session {
             openFiles: [], // Array of file paths
             activeFilePath: null,
             viewStates: new Map() // path -> viewState
+        };
+        
+        this.layoutState = {
+            editorFlex: '2 1 0%'
         };
 
         // Preview Terminal (Canvas renderer for performance)
