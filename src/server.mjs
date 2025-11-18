@@ -72,7 +72,34 @@ const terminalManager = new TerminalManager();
 setupFsRoutes(router);
 
 // API routes for session management
-router.get('/api/heartbeat', (ctx) => {
+router.all('/api/heartbeat', async (ctx) => {
+    if (ctx.method === 'POST') {
+        const { updates } = ctx.request.body;
+        if (updates && updates.sessions) {
+            for (const update of updates.sessions) {
+                const session = terminalManager.getSession(update.id);
+                if (session) {
+                    if (update.resize) {
+                        const { cols, rows } = update.resize;
+                        if (cols && rows) session.resize(cols, rows);
+                    }
+                    if (update.editorState) {
+                        terminalManager.updateSessionState(session.id, { editorState: update.editorState });
+                    }
+                    if (update.fileWrites) {
+                        for (const file of update.fileWrites) {
+                            try {
+                                await fsPromises.writeFile(file.path, file.content);
+                            } catch (e) {
+                                console.error(`[Heartbeat] Write failed: ${file.path}`, e);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     ctx.body = {
         sessions: terminalManager.listSessions(),
         system: systemMonitor.getStats()

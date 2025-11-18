@@ -238,15 +238,8 @@ class EditorManager {
                 const filePath = this.currentSession.editorState.activeFilePath;
                 if (!filePath) return;
                 
-                if (this.saveFileTimer) clearTimeout(this.saveFileTimer);
-                this.saveFileTimer = setTimeout(() => {
-                    const content = this.editor.getValue();
-                    auth.fetch('/api/fs/write', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ path: filePath, content })
-                    });
-                }, 1000);
+                const pending = getPendingSession(this.currentSession.id);
+                pending.fileWrites.set(filePath, this.editor.getValue());
             });
             
             monaco.editor.defineTheme('solarized-dark', {
@@ -465,7 +458,14 @@ class EditorManager {
                     content = data.content;
                     
                     if (this.monacoInstance) {
-                        model = this.monacoInstance.editor.createModel(content, undefined, this.monacoInstance.Uri.file(filePath));
+                        const uri = this.monacoInstance.Uri.file(filePath);
+                        const existing = this.monacoInstance.editor.getModel(uri);
+                        if (existing) {
+                            existing.setValue(content);
+                            model = existing;
+                        } else {
+                            model = this.monacoInstance.editor.createModel(content, undefined, uri);
+                        }
                     }
                 } catch (err) {
                     console.error(err);
@@ -683,7 +683,9 @@ class Session {
         this.mainTerm.onResize(size => {
             this.previewTerm.resize(size.cols, size.rows);
             this.updatePreviewScale();
-            this.send({ type: 'resize', cols: size.cols, rows: size.rows });
+            
+            const pending = getPendingSession(this.id);
+            pending.resize = { cols: size.cols, rows: size.rows };
         });
 
         this.connect();
@@ -780,21 +782,13 @@ class Session {
     }
 
     saveState() {
-        if (this.saveStateTimer) clearTimeout(this.saveStateTimer);
-        this.saveStateTimer = setTimeout(() => {
-            auth.fetch(`/api/sessions/${this.id}/state`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    editorState: {
-                        isVisible: this.editorState.isVisible,
-                        root: this.editorState.root,
-                        openFiles: this.editorState.openFiles,
-                        activeFilePath: this.editorState.activeFilePath
-                    }
-                })
-            });
-        }, 1000);
+        const pending = getPendingSession(this.id);
+        pending.editorState = {
+            isVisible: this.editorState.isVisible,
+            root: this.editorState.root,
+            openFiles: this.editorState.openFiles,
+            activeFilePath: this.editorState.activeFilePath
+        };
     }
 
     connect() {
@@ -965,9 +959,20 @@ class Session {
 
 // #region State Management
 const state = {
-    sessions: new Map(), // Map<id, Session>
+    sessions: new Map(), // id -> Session
     activeSessionId: null
 };
+
+const pendingChanges = {
+    sessions: new Map() // id -> { resize, editorState, fileWrites: Map<path, content> }
+};
+
+function getPendingSession(id) {
+    if (!pendingChanges.sessions.has(id)) {
+        pendingChanges.sessions.set(id, { fileWrites: new Map() });
+    }
+    return pendingChanges.sessions.get(id);
+}
 
 const globalExpandedPaths = new Set();
 
@@ -986,23 +991,64 @@ async function fetchExpandedPaths() {
 async function syncSessions() {
     if (!auth.isAuthenticated) return;
 
-    await fetchExpandedPaths();
+    const updates = { sessions: [] };
+    for (const [id, pending] of pendingChanges.sessions) {
+        const sessionUpdate = { id };
+        let hasUpdate = false;
+
+        if (pending.resize) {
+            sessionUpdate.resize = pending.resize;
+            hasUpdate = true;
+        }
+        if (pending.editorState) {
+            sessionUpdate.editorState = pending.editorState;
+            hasUpdate = true;
+        }
+        if (pending.fileWrites && pending.fileWrites.size > 0) {
+            sessionUpdate.fileWrites = Array.from(pending.fileWrites.entries()).map(([path, content]) => ({ path, content }));
+            hasUpdate = true;
+        }
+
+        if (hasUpdate) {
+            updates.sessions.push(sessionUpdate);
+        }
+    }
 
     try {
-        const response = await auth.fetch('/api/heartbeat');
-        if (!response.ok) return;
-        const data = await response.json();
-        // console.log('[Frontend] Heartbeat data:', data);
+        const response = await auth.fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ updates })
+        });
         
-        const sessions = Array.isArray(data) ? data : data.sessions;
-        const system = data.system;
-
-        reconcileSessions(sessions);
-        if (system) {
-            updateSystemStatus(system);
+        if (!response.ok) return;
+        
+        // Clear sent updates
+        for (const update of updates.sessions) {
+            const pending = pendingChanges.sessions.get(update.id);
+            if (!pending) continue;
+            
+            if (update.resize) delete pending.resize;
+            if (update.editorState) delete pending.editorState;
+            if (update.fileWrites) {
+                for (const file of update.fileWrites) {
+                    pending.fileWrites.delete(file.path);
+                }
+            }
         }
+
+        const data = await response.json();
+        
+        setStatus('connected');
+        if (data.system) {
+            updateSystemStatus(data.system);
+        }
+
+        const sessions = Array.isArray(data) ? data : data.sessions;
+        reconcileSessions(sessions);
     } catch (error) {
         console.error('Heartbeat failed:', error);
+        setStatus('reconnecting');
     }
 }
 

@@ -126,6 +126,31 @@ async function main() {
 
     await fsPromises.writeFile(path.join(PUBLIC_ICONS_DIR, 'map.json'), JSON.stringify(fileMap, null, 2));
     console.log('✅ Map generated at public/icons/map.json');
+
+    // Copy Fonts
+    console.log('⬇️  Copying Fonts...');
+    const fontsDir = path.join(__dirname, 'public', 'fonts');
+    const fontSourceDir = path.join(__dirname, 'node_modules', '@fontsource', 'monaspace-neon', 'files');
+    
+    await fsPromises.mkdir(fontsDir, { recursive: true });
+
+    const fontsToCopy = [
+        { src: 'monaspace-neon-latin-400-normal.woff2', dest: 'MonaspaceNeon-Regular.woff2' },
+        { src: 'monaspace-neon-latin-700-normal.woff2', dest: 'MonaspaceNeon-Bold.woff2' }
+    ];
+
+    for (const font of fontsToCopy) {
+        const srcPath = path.join(fontSourceDir, font.src);
+        const destPath = path.join(fontsDir, font.dest);
+        try {
+            await fsPromises.copyFile(srcPath, destPath);
+            console.log(`   Copied ${font.dest}`);
+        } catch (e) {
+            console.warn(`   Failed to copy ${font.dest}:`, e.message);
+            console.warn('   Make sure you have run "npm install" and @fontsource/monaspace-neon is installed.');
+        }
+    }
+    console.log('✅ Fonts copied.');
 }
 
 main().catch(console.error);

@@ -3,7 +3,7 @@
 /* Monaspace Neon */
 @font-face {
   font-family: 'Monaspace Neon';
-  src: url('https://cdn.jsdelivr.net/gh/githubnext/monaspace@v1.000/fonts/webfonts/MonaspaceNeon-Regular.woff2') format('woff2');
+  src: url('./fonts/MonaspaceNeon-Regular.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -11,7 +11,7 @@
 
 @font-face {
   font-family: 'Monaspace Neon';
-  src: url('https://cdn.jsdelivr.net/gh/githubnext/monaspace@v1.000/fonts/webfonts/MonaspaceNeon-Bold.woff2') format('woff2');
+  src: url('./fonts/MonaspaceNeon-Bold.woff2') format('woff2');
   font-weight: bold;
   font-style: normal;
   font-display: swap;
