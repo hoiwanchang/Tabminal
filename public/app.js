@@ -207,7 +207,7 @@ class EditorManager {
     refreshSessionTree(session) {
         if (!session || !session.fileTreeElement) return;
         session.fileTreeElement.innerHTML = '';
-        this.renderTree(session.cwd, session.fileTreeElement);
+        this.renderTree(session.cwd, session.fileTreeElement, session);
     }
 
     initMonaco() {
@@ -583,10 +583,11 @@ class Session {
         // Editor State (Per Session)
         this.editorState = {
             isVisible: false,
-            root: this.cwd || '.',
-            openFiles: [], // Array of file paths
+            root: this.cwd,
+            openFiles: [], // Array of paths
             activeFilePath: null,
-            viewStates: new Map() // path -> viewState
+            viewStates: new Map(), // Path -> ViewState
+            expandedPaths: new Set() // Set of expanded directory paths
         };
         
         this.layoutState = {
@@ -1119,7 +1120,7 @@ function createTabElement(session) {
     session.fileTreeElement = fileTree;
     
     if (session.editorState && session.editorState.isVisible) {
-        editorManager.renderTree(session.cwd, fileTree);
+        editorManager.renderTree(session.cwd, fileTree, session);
     }
     tab.appendChild(fileTree);
     

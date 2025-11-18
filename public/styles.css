@@ -650,11 +650,25 @@ body {
     padding: 4px 0;
     font-size: 11px;
     border-bottom: none;
-    max-height: 300px;
     display: none;
     background-color: transparent;
     margin: 0;
     border-radius: 0;
+    transition: max-height 0.3s ease, opacity 0.2s ease;
+}
+
+.tab-item:not(.active) .tab-file-tree {
+    max-height: 110px; /* Approx 5 items */
+    pointer-events: none;
+    opacity: 0.6;
+    overflow: hidden;
+}
+
+.tab-item.active .tab-file-tree {
+    max-height: 600px; /* Approx 30 items */
+    pointer-events: auto;
+    opacity: 1;
+    overflow: auto;
 }
 
 .tab-item.editor-open .tab-file-tree {
