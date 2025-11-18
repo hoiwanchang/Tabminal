@@ -273,11 +273,7 @@ export class TerminalSession {
         const safeCols = clampDimension(cols);
         const safeRows = clampDimension(rows);
         if (safeCols && safeRows) {
-            if (this.manager) {
-                this.manager.resizeAll(safeCols, safeRows);
-            } else {
-                this.resize(safeCols, safeRows);
-            }
+            this.resize(safeCols, safeRows);
         }
     }
 
