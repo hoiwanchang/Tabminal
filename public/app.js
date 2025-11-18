@@ -282,6 +282,12 @@ class EditorManager {
         const state = this.currentSession.editorState;
         state.isVisible = !state.isVisible;
         
+        const tab = document.querySelector(`.tab-item[data-session-id="${this.currentSession.id}"]`);
+        if (tab) {
+            if (state.isVisible) tab.classList.add('editor-open');
+            else tab.classList.remove('editor-open');
+        }
+        
         this.pane.style.display = state.isVisible ? 'flex' : 'none';
         
         if (state.isVisible) {
@@ -1081,6 +1087,9 @@ function renderTabs() {
 function createTabElement(session) {
     const tab = document.createElement('li');
     tab.className = 'tab-item';
+    if (session.editorState && session.editorState.isVisible) {
+        tab.classList.add('editor-open');
+    }
     tab.dataset.sessionId = session.id;
     
     const closeBtn = document.createElement('button');
