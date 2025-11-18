@@ -259,6 +259,24 @@ class EditorManager {
         });
     }
 
+    updateEditorPaneVisibility() {
+        if (!this.currentSession) return;
+        const state = this.currentSession.editorState;
+        const hasOpenFiles = state.openFiles.length > 0;
+        const shouldShow = state.isVisible && hasOpenFiles;
+        
+        this.pane.style.display = shouldShow ? 'flex' : 'none';
+        this.resizer.style.display = shouldShow ? 'block' : 'none';
+        
+        if (shouldShow) {
+            this.layout();
+        } else {
+            if (this.currentSession) {
+                setTimeout(() => this.currentSession.mainFitAddon.fit(), 50);
+            }
+        }
+    }
+
     toggle() {
         if (!this.currentSession) return;
         const state = this.currentSession.editorState;
@@ -270,9 +288,6 @@ class EditorManager {
             else tab.classList.remove('editor-open');
         }
         
-        this.pane.style.display = state.isVisible ? 'flex' : 'none';
-        this.resizer.style.display = state.isVisible ? 'block' : 'none';
-        
         if (state.isVisible) {
             // Only render if empty (first open)
             if (this.currentSession.fileTreeElement && this.currentSession.fileTreeElement.children.length === 0) {
@@ -281,15 +296,10 @@ class EditorManager {
             this.renderEditorTabs();
             if (state.activeFilePath) {
                 this.activateTab(state.activeFilePath, true);
-            } else {
-                this.showEmptyState();
-            }
-            this.layout();
-        } else {
-            if (this.currentSession) {
-                setTimeout(() => this.currentSession.mainFitAddon.fit(), 50);
             }
         }
+        
+        this.updateEditorPaneVisibility();
     }
 
     switchTo(session) {
@@ -309,19 +319,16 @@ class EditorManager {
         }
 
         const state = session.editorState;
-        this.pane.style.display = state.isVisible ? 'flex' : 'none';
-        this.resizer.style.display = state.isVisible ? 'block' : 'none';
 
         // Only render tabs and content, file tree is persistent in sidebar
         if (state.isVisible) {
             this.renderEditorTabs();
             if (state.activeFilePath) {
                 this.activateTab(state.activeFilePath, true);
-            } else {
-                this.showEmptyState();
             }
-            this.layout();
         }
+        
+        this.updateEditorPaneVisibility();
         
         // Restore layout
         if (session.layoutState) {
@@ -399,6 +406,8 @@ class EditorManager {
             state.openFiles.push(filePath);
             this.renderEditorTabs();
         }
+        
+        this.updateEditorPaneVisibility();
 
         if (!this.globalModels.has(filePath)) {
             const ext = filePath.split('.').pop().toLowerCase();
@@ -444,6 +453,7 @@ class EditorManager {
         }
 
         this.renderEditorTabs();
+        this.updateEditorPaneVisibility();
         
         if (state.activeFilePath === filePath) {
             if (state.openFiles.length > 0) {
