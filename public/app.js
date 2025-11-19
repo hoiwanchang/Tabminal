@@ -469,8 +469,8 @@ class EditorManager {
                         }
                     }
                 } catch (err) {
-                    console.error(err);
                     toastManager.show('Error', `Failed to open file: ${err.message}`, 'error');
+                    this.closeFile(filePath);
                     return;
                 }
             }
@@ -571,6 +571,13 @@ class EditorManager {
         if (file.type === 'image') {
             this.monacoContainer.style.display = 'none';
             this.imagePreviewContainer.style.display = 'flex';
+            
+            this.imagePreview.onerror = () => {
+                toastManager.show('Error', `Failed to load image: ${filePath.split('/').pop()}`, 'error');
+                this.closeFile(filePath);
+                this.imagePreview.onerror = null;
+            };
+            
             this.imagePreview.src = `/api/fs/raw?path=${encodeURIComponent(filePath)}&token=${auth.token}`;
         } else {
             this.imagePreviewContainer.style.display = 'none';

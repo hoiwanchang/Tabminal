@@ -535,10 +535,11 @@ body {
     color: var(--text-muted);
     border-right: 1px solid var(--border-color);
     cursor: pointer;
-    min-width: 100px;
-    max-width: 200px;
+    min-width: 80px;
+    max-width: none;
+    width: auto;
     background-color: var(--bg-surface);
-    flex-shrink: 0; /* Prevent shrinking, force scroll */
+    flex-shrink: 0;
 }
 
 .editor-tab:hover {
@@ -605,8 +606,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #00212b; /* Slightly darker for image contrast */
     overflow: auto;
+    background-color: #f0f0f0;
+    background-image:
+        linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+        linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+        linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
 }
 
 .image-preview-container img {
