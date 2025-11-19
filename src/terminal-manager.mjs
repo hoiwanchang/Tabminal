@@ -142,7 +142,8 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
             shell,
             initialCwd,
             env: env,
-            editorState: restoredData ? restoredData.editorState : undefined
+            editorState: restoredData ? restoredData.editorState : undefined,
+            executions: restoredData ? restoredData.executions : undefined
         });
 
         // Initial save
@@ -171,7 +172,8 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
             cols: session.pty.cols,
             rows: session.pty.rows,
             createdAt: session.createdAt,
-            editorState: session.editorState
+            editorState: session.editorState,
+            executions: session.executions
         });
     }
 
@@ -230,7 +232,8 @@ precmd_functions+=(_tabminal_zsh_apply_prompt_marker)
             env: s.env,
             cols: s.pty.cols,
             rows: s.pty.rows,
-            editorState: s.editorState
+            editorState: s.editorState,
+            executions: s.executions
         }));
     }
 

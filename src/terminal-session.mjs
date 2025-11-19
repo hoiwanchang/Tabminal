@@ -34,6 +34,7 @@ export class TerminalSession {
             .join('\n');
         
         this.editorState = options.editorState || {};
+        this.executions = options.executions || [];
 
         this.historyLimit = Math.max(1, options.historyLimit ?? DEFAULT_HISTORY_LIMIT);
         this.history = '';
@@ -635,7 +636,8 @@ export class TerminalSession {
             entry.startedAt && entry.completedAt
                 ? entry.completedAt.getTime() - entry.startedAt.getTime()
                 : null;
-        console.log('[Terminal Execution]', {
+        
+        const record = {
             command: entry.command ?? null,
             exitCode: entry.exitCode ?? null,
             input: entry.input,
@@ -643,7 +645,18 @@ export class TerminalSession {
             startedAt: entry.startedAt?.toISOString() ?? null,
             completedAt: entry.completedAt?.toISOString() ?? null,
             duration: duration ?? null,
-        });
+        };
+
+        console.log('[Terminal Execution]', record);
+
+        this.executions.push(record);
+        if (this.executions.length > 100) {
+            this.executions.shift();
+        }
+
+        if (this.manager) {
+            this.manager.saveSessionState(this);
+        }
     }
 
     _broadcast(message) {
