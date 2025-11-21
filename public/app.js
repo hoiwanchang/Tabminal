@@ -1193,31 +1193,27 @@ function animateHeartbeat() {
     requestAnimationFrame(animateHeartbeat);
     
     let needsRedraw = false;
+    // Constant Speed Interpolation
+    // This ensures the curve morphs at a steady pace, eliminating the "surge" or "jump" feel.
+    // Speed = units per frame.
+    const moveSpeed = 0.5; 
     
-    // Spring Physics Parameters
-    // Tension: 0.005 (Low) -> Slow acceleration, heavy feel
-    // Friction: 0.92 (High) -> No bouncing, smooth deceleration
-    const tension = 0.005;
-    const friction = 0.92;
-    
-    // 1. Spring Physics for Data Points
+    // 1. Constant Speed Data Interpolation
     for (let i = 0; i < DISPLAY_POINTS; i++) {
-        const dist = targetDisplayData[i] - currentDisplayData[i];
+        const diff = targetDisplayData[i] - currentDisplayData[i];
+        const dist = Math.abs(diff);
         
-        // Apply force
-        velocities[i] += dist * tension;
-        // Apply friction
-        velocities[i] *= friction;
-        
-        // Update position
-        currentDisplayData[i] += velocities[i];
-        
-        if (Math.abs(velocities[i]) > 0.001 || Math.abs(dist) > 0.01) {
+        if (dist > 0.001) {
+            // Move towards target by fixed step, or snap if close
+            const step = Math.min(dist, moveSpeed);
+            currentDisplayData[i] += Math.sign(diff) * step;
             needsRedraw = true;
+        } else {
+            currentDisplayData[i] = targetDisplayData[i];
         }
     }
     
-    // 2. Smooth Scaling Interpolation (Exponential is fine for scalar)
+    // 2. Smooth Scaling Interpolation (Keep exponential for scaling as it feels better for zoom)
     let targetMax = 0;
     for (const val of currentDisplayData) {
         if (val > targetMax) targetMax = val;
