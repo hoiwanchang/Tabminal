@@ -1647,16 +1647,19 @@ class NotificationManager {
     }
 
     send(title, body) {
+        if ('Notification' in window && Notification.permission === 'granted') {
+            this.hasPermission = true;
+        }
+
         if (!this.hasPermission) return false;
         try {
             new Notification(title, {
                 body: body,
-                icon: '/favicon.svg',
+                icon: '/apple-touch-icon.png',
                 tag: 'tabminal-status'
             });
             return true;
         } catch (e) {
-            console.error('Notification failed:', e);
             return false;
         }
     }
@@ -1665,7 +1668,7 @@ const notificationManager = new NotificationManager();
 
 document.addEventListener('click', () => {
     notificationManager.requestPermission();
-}, { once: true });
+}, { once: true, capture: true });
 // #endregion
 
 // #region Toast Manager
@@ -1763,7 +1766,10 @@ class ToastManager {
     }
 }
 const toastManager = new ToastManager();
-window.alert = (msg) => toastManager.show('Alert', msg, 'warning');
+window.alert = (msg) => {
+    const sent = notificationManager.send('Alert', msg);
+    if (!sent) toastManager.show('Alert', msg, 'warning');
+};
 // #endregion
 
 let currentConnectionStatus = null;
