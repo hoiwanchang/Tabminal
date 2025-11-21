@@ -149,10 +149,10 @@ body {
     .tab-item:hover .toggle-editor-btn {
         opacity: 1;
     }
-    
-    .tab-item:hover .tab-info-overlay {
-        transform: translateY(100%); /* Slide down out of view */
-    }
+}
+
+.tab-item:hover .tab-info-overlay {
+    transform: translateY(100%); /* Slide down out of view */
 }
 
 /* Always show buttons on active tab (Mobile friendly) */
