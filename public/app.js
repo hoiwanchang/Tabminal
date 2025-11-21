@@ -1083,8 +1083,38 @@ const renderData = new Array(100).fill(0);
 const heartbeatCanvas = document.getElementById('heartbeat-canvas');
 const heartbeatCtx = heartbeatCanvas ? heartbeatCanvas.getContext('2d') : null;
 
+function updateCanvasSize() {
+    if (!heartbeatCanvas) return;
+    
+    // Calculate gap at the bottom of the viewport
+    // On iPad with floating keyboard, visualViewport might be smaller than screen, leaving a gap.
+    let bottomGap = 0;
+    if (window.visualViewport) {
+        // window.innerHeight includes the area covered by the keyboard if it's not resizing the view?
+        // Actually, visualViewport.height + offsetTop is the bottom edge of the visible web content.
+        // window.innerHeight is the height of the layout viewport.
+        bottomGap = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
+    }
+    
+    // Ensure a minimum height for visibility (Safe Area approx 34px, plus some buffer)
+    // If gap is huge (e.g. keyboard open but canvas fixed at bottom), we might want to limit it?
+    // But user said "use actual available area".
+    
+    const minHeight = 60; 
+    // Add safe area buffer if we can detect it, otherwise just use gap or min
+    // Since we can't easily read env(safe-area) in JS, we rely on the gap calculation.
+    // If gap is 0 (normal view), we fallback to minHeight.
+    
+    const targetHeight = Math.max(bottomGap, minHeight);
+    
+    // Apply height
+    heartbeatCanvas.style.height = `${targetHeight}px`;
+}
+
 function drawHeartbeat() {
     if (!heartbeatCtx || !heartbeatCanvas) return;
+    
+    updateCanvasSize(); // Check size on every frame (or throttle it)
     
     const width = heartbeatCanvas.clientWidth;
     const height = heartbeatCanvas.clientHeight;
