@@ -1905,10 +1905,10 @@ if (virtualKeys) {
         let data = '';
         if (key === 'ESC') data = '\x1b';
         else if (key === 'TAB') data = '\t';
-        else if (key === 'UP') data = '\x1b[OA';
-        else if (key === 'DOWN') data = '\x1b[OB';
-        else if (key === 'RIGHT') data = '\x1b[OC';
-        else if (key === 'LEFT') data = '\x1b[OD';
+        else if (key === 'UP') data = '\x1b[A';
+        else if (key === 'DOWN') data = '\x1b[B';
+        else if (key === 'RIGHT') data = '\x1b[C';
+        else if (key === 'LEFT') data = '\x1b[D';
         else data = key;
 
         session.send({ type: 'input', data });
