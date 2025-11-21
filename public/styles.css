@@ -156,6 +156,13 @@ body {
     transform: translateY(100%); /* Slide down out of view */
 }
 
+/* Disable slide on mobile since there is no preview underneath */
+@media (max-width: 767px) {
+    .tab-item:hover .tab-info-overlay {
+        transform: none !important;
+    }
+}
+
 /* Only pin toggle button if editor is open */
 .tab-item.editor-open .toggle-editor-btn {
     opacity: 1;
