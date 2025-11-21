@@ -173,11 +173,11 @@ body {
     width: 28px; /* Same size as toggle btn */
     height: 28px;
     border-radius: 4px; /* Square with rounded corners */
-    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent for blur */
+    background-color: rgba(0, 0, 0, 0.6); /* Darker for visibility */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -200,6 +200,12 @@ body {
 .close-tab-button:active {
     background-color: rgba(220, 50, 47, 1);
     transform: translateY(1px);
+}
+
+/* Ensure buttons are visible on active tab (Mobile/Touch Friendly) */
+.tab-item.active .close-tab-button,
+.tab-item.active .toggle-editor-btn {
+    opacity: 1;
 }
 
 .preview-container {
@@ -702,11 +708,11 @@ body {
     width: 28px; /* Larger touch target */
     height: 28px;
     border-radius: 4px; /* Square with rounded corners */
-    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent for blur */
+    background-color: rgba(0, 0, 0, 0.6); /* Darker for visibility */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
-    border: 1px solid rgba(255, 255, 255, 0.1); /* Subtle border */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Stronger border */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -726,16 +732,17 @@ body {
 
 /* Hovering the button itself */
 .toggle-editor-btn:hover {
-    background-color: rgba(0, 0, 0, 0.6) !important;
-    border-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 /* Active/Pinned State (Editor is Open) */
 .tab-item.editor-open .toggle-editor-btn {
     opacity: 1;
-    background-color: rgba(38, 139, 210, 0.3); /* Accent tint with blur */
-    border-color: rgba(38, 139, 210, 0.6);
-    box-shadow: inset 0 0 10px rgba(38, 139, 210, 0.2);
+    background-color: rgba(38, 139, 210, 0.5); /* Stronger blue */
+    border-color: rgba(38, 139, 210, 0.8);
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+    color: white;
 }
 
 /* Show on active tab (for mobile discoverability) */
