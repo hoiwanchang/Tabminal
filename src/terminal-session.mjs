@@ -345,19 +345,26 @@ export class TerminalSession {
     }
 
     async _handleAiCommand(prompt) {
+        // Ensure clean line start and set Cyan color
+        this._broadcast({ type: 'output', data: '\r\x1b[K\x1b[36m' });
+
         try {
-            const result = await alan.prompt(prompt);
-            let response = result.text || '';
-            
-            console.log('[AI Debug] Raw:', JSON.stringify(response));
+            const streamCallback = (chunk) => {
+                if (chunk && chunk.text) {
+                    let text = chunk.text;
+                    // Normalize newlines for terminal
+                    text = text.replace(/\n/g, '\r\n');
+                    this._broadcast({ type: 'output', data: text });
+                }
+            };
 
-            // Fix newlines for terminal display (LF -> CRLF)
-            response = response.replace(/\r?\n/g, '\r\n');
+            await alan.prompt(prompt, { 
+                stream: streamCallback,
+                delta: true
+            });
             
-            console.log('[AI Debug] Fixed:', JSON.stringify(response));
-
-            // Format response (Cyan color) with force CR and Line Clear
-            this._broadcast({ type: 'output', data: `\r\x1b[K\x1b[36m${response}\x1b[0m\r\n` });
+            // End color and new line
+            this._broadcast({ type: 'output', data: '\x1b[0m\r\n' });
         } catch (e) {
             this._broadcast({ type: 'output', data: `\x1b[31mAI Error: ${e.message}\x1b[0m\r\n` });
         }
