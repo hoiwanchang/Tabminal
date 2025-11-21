@@ -1078,43 +1078,52 @@ async function syncSessions() {
 
 let lastSystemData = null;
 let lastLatency = 0;
-const targetHistory = new Array(100).fill(0);
-const renderData = new Array(100).fill(0);
+const latencyHistory = []; // Raw data, variable length
+const DISPLAY_POINTS = 100;
+const targetDisplayData = new Array(DISPLAY_POINTS).fill(0);
+const currentDisplayData = new Array(DISPLAY_POINTS).fill(0);
+
 const heartbeatCanvas = document.getElementById('heartbeat-canvas');
 const heartbeatCtx = heartbeatCanvas ? heartbeatCanvas.getContext('2d') : null;
 
 function updateCanvasSize() {
     if (!heartbeatCanvas) return;
-    
-    // Calculate gap at the bottom of the viewport
-    // On iPad with floating keyboard, visualViewport might be smaller than screen, leaving a gap.
     let bottomGap = 0;
     if (window.visualViewport) {
-        // window.innerHeight includes the area covered by the keyboard if it's not resizing the view?
-        // Actually, visualViewport.height + offsetTop is the bottom edge of the visible web content.
-        // window.innerHeight is the height of the layout viewport.
         bottomGap = window.innerHeight - (window.visualViewport.height + window.visualViewport.offsetTop);
     }
-    
-    // Ensure a minimum height for visibility (Safe Area approx 34px, plus some buffer)
-    // If gap is huge (e.g. keyboard open but canvas fixed at bottom), we might want to limit it?
-    // But user said "use actual available area".
-    
     const minHeight = 60; 
-    // Add safe area buffer if we can detect it, otherwise just use gap or min
-    // Since we can't easily read env(safe-area) in JS, we rely on the gap calculation.
-    // If gap is 0 (normal view), we fallback to minHeight.
-    
     const targetHeight = Math.max(bottomGap, minHeight);
-    
-    // Apply height
     heartbeatCanvas.style.height = `${targetHeight}px`;
+}
+
+function resample(source, targetLen) {
+    if (source.length === 0) return new Array(targetLen).fill(0);
+    if (source.length === 1) return new Array(targetLen).fill(source[0]);
+    
+    const result = [];
+    const step = (source.length - 1) / (targetLen - 1);
+    
+    for (let i = 0; i < targetLen; i++) {
+        const pos = i * step;
+        const index = Math.floor(pos);
+        const fraction = pos - index;
+        
+        if (index >= source.length - 1) {
+            result.push(source[source.length - 1]);
+        } else {
+            const v1 = source[index];
+            const v2 = source[index + 1];
+            result.push(v1 + (v2 - v1) * fraction);
+        }
+    }
+    return result;
 }
 
 function drawHeartbeat() {
     if (!heartbeatCtx || !heartbeatCanvas) return;
     
-    updateCanvasSize(); // Check size on every frame (or throttle it)
+    updateCanvasSize();
     
     const width = heartbeatCanvas.clientWidth;
     const height = heartbeatCanvas.clientHeight;
@@ -1133,11 +1142,11 @@ function drawHeartbeat() {
     heartbeatCtx.lineWidth = 1.5;
     heartbeatCtx.lineJoin = 'round';
     
-    const step = width / (renderData.length - 1);
+    const step = width / (DISPLAY_POINTS - 1);
     
-    // Dynamic Auto-Scaling based on RENDER data for smoothness
+    // Dynamic Auto-Scaling
     let maxVal = 0;
-    for (const val of renderData) {
+    for (const val of currentDisplayData) {
         if (val > maxVal) maxVal = val;
     }
     const effectiveMax = maxVal > 0 ? maxVal : 1;
@@ -1145,20 +1154,21 @@ function drawHeartbeat() {
     
     const getY = (val) => height - (val / verticalRange) * height;
     
-    heartbeatCtx.moveTo(0, getY(renderData[0]));
+    heartbeatCtx.moveTo(0, getY(currentDisplayData[0]));
     
-    for (let i = 1; i < renderData.length - 2; i++) {
+    for (let i = 1; i < DISPLAY_POINTS - 2; i++) {
         const x1 = i * step;
-        const y1 = getY(renderData[i]);
+        const y1 = getY(currentDisplayData[i]);
         const x2 = (i + 1) * step;
-        const y2 = getY(renderData[i + 1]);
+        const y2 = getY(currentDisplayData[i + 1]);
         const xc = (x1 + x2) / 2;
         const yc = (y1 + y2) / 2;
         heartbeatCtx.quadraticCurveTo(x1, y1, xc, yc);
     }
     
-    for (let i = renderData.length - 2; i < renderData.length; i++) {
-        heartbeatCtx.lineTo(i * step, getY(renderData[i]));
+    // Last few points
+    for (let i = DISPLAY_POINTS - 2; i < DISPLAY_POINTS; i++) {
+        heartbeatCtx.lineTo(i * step, getY(currentDisplayData[i]));
     }
 
     heartbeatCtx.stroke();
@@ -1173,13 +1183,13 @@ function animateHeartbeat() {
     requestAnimationFrame(animateHeartbeat);
     
     let needsRedraw = false;
-    for (let i = 0; i < 100; i++) {
-        const diff = targetHistory[i] - renderData[i];
+    for (let i = 0; i < DISPLAY_POINTS; i++) {
+        const diff = targetDisplayData[i] - currentDisplayData[i];
         if (Math.abs(diff) > 0.01) {
-            renderData[i] += diff * 0.05; // Smooth easing
+            currentDisplayData[i] += diff * 0.05;
             needsRedraw = true;
         } else {
-            renderData[i] = targetHistory[i];
+            currentDisplayData[i] = targetDisplayData[i];
         }
     }
     
@@ -1194,8 +1204,11 @@ function updateSystemStatus(system, latency) {
     if (system) lastSystemData = system;
     if (latency !== null && latency !== undefined) {
         lastLatency = latency;
-        targetHistory.push(latency);
-        targetHistory.shift();
+        latencyHistory.push(latency);
+        if (latencyHistory.length > 100) latencyHistory.shift();
+        
+        const resampled = resample(latencyHistory, DISPLAY_POINTS);
+        for(let i=0; i<DISPLAY_POINTS; i++) targetDisplayData[i] = resampled[i];
     }
     
     const data = system || lastSystemData;
