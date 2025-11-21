@@ -111,6 +111,7 @@ body {
     min-height: 76px;
     display: flex;
     flex-direction: column;
+    /* padding-left removed to keep layout stable */
 }
 
 /* ... (keep existing styles) ... */
@@ -138,11 +139,21 @@ body {
     transition: background-color 0.2s ease;
 }
 
-.tab-item:hover {
-    background-color: rgba(88, 110, 117, 0.2);
+/* Desktop Hover Effects */
+@media (hover: hover) {
+    .tab-item:hover {
+        background-color: rgba(88, 110, 117, 0.2);
+    }
+
+    .tab-item:hover .close-tab-button,
+    .tab-item:hover .toggle-editor-btn {
+        opacity: 1;
+    }
 }
 
-.tab-item:hover .close-tab-button {
+/* Always show buttons on active tab (Mobile friendly) */
+.tab-item.active .close-tab-button,
+.tab-item.active .toggle-editor-btn {
     opacity: 1;
 }
 
@@ -154,11 +165,14 @@ body {
 .close-tab-button {
     position: absolute;
     top: 4px;
-    right: 4px;
-    width: 20px;
-    height: 20px;
+    left: 4px; /* Left side */
+    right: auto;
+    width: 28px; /* Larger touch target */
+    height: 28px;
     border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent for blur */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
     border: none;
     display: flex;
@@ -168,7 +182,7 @@ body {
     opacity: 0;
     transition: opacity 0.2s ease, background-color 0.2s ease;
     z-index: 10;
-    font-size: 12px;
+    font-size: 18px; /* Larger X for balance */
     line-height: 1;
     padding: 0;
 }
@@ -218,8 +232,10 @@ body {
     transition: transform 0.3s ease; /* Smooth slide transition */
 }
 
-.tab-item:hover .tab-info-overlay {
-    transform: translateY(100%); /* Slide down out of view */
+@media (hover: hover) {
+    .tab-item:hover .tab-info-overlay {
+        transform: translateY(100%); /* Slide down out of view */
+    }
 }
 
 .tab-info-overlay .meta {
@@ -681,11 +697,13 @@ body {
 .toggle-editor-btn {
     position: absolute;
     top: 4px;
-    right: 28px; /* Left of close button */
-    width: 20px;
-    height: 20px;
+    right: 4px; /* Fixed right */
+    width: 28px; /* Larger touch target */
+    height: 28px;
     border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.3);
+    background-color: rgba(0, 0, 0, 0.3); /* Semi-transparent for blur */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
     border: none;
     display: flex;
@@ -693,9 +711,9 @@ body {
     justify-content: center;
     cursor: pointer;
     opacity: 0;
-    transition: opacity 0.2s ease, background-color 0.2s ease, right 0.2s ease;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
     z-index: 10;
-    font-size: 11px; /* Slightly smaller icon */
+    font-size: 14px;
     padding: 0;
     line-height: 1;
 }
@@ -709,14 +727,7 @@ body {
     color: var(--accent-color);
 }
 
-.tab-item.editor-open:not(:hover) .toggle-editor-btn {
-    right: 8px;
-}
 
-.toggle-editor-btn:hover {
-    background-color: var(--accent-color);
-    color: white;
-}
 
 .toggle-editor-btn:active {
     transform: scale(0.95);

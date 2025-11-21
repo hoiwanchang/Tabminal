@@ -529,13 +529,12 @@ class EditorManager {
             const span = document.createElement('span');
             span.textContent = name;
             
-            const closeBtn = document.createElement('span');
-            closeBtn.className = 'close-btn';
-            closeBtn.innerHTML = '&times;';
-            closeBtn.onclick = (e) => {
-                e.stopPropagation();
-                this.closeFile(path);
-            };
+                        const closeBtn = document.createElement('span');
+                closeBtn.className = 'close-btn';
+                closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+                closeBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            this.closeFile(path);            };
             
             tab.onclick = () => this.activateTab(path);
             
@@ -1263,7 +1262,7 @@ function createTabElement(session) {
     
     const closeBtn = document.createElement('button');
     closeBtn.className = 'close-tab-button';
-    closeBtn.innerHTML = '&times;';
+    closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
     closeBtn.title = 'Close Terminal';
     closeBtn.onclick = (e) => {
         e.stopPropagation();
@@ -1273,7 +1272,7 @@ function createTabElement(session) {
 
     const toggleEditorBtn = document.createElement('button');
     toggleEditorBtn.className = 'toggle-editor-btn';
-    toggleEditorBtn.innerHTML = '<img src="/icons/folder-src.svg" style="width: 14px; height: 14px; vertical-align: middle;">';
+    toggleEditorBtn.innerHTML = '<img src="/icons/folder-src.svg" style="width: 16px; height: 16px; vertical-align: middle;">';
     toggleEditorBtn.title = 'Toggle File Editor';
     toggleEditorBtn.onclick = (e) => {
         e.stopPropagation();
@@ -1430,7 +1429,7 @@ class ToastManager {
         
         const closeBtn = document.createElement('button');
         closeBtn.className = 'toast-close';
-        closeBtn.innerHTML = '&times;';
+        closeBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
         closeBtn.onclick = () => this.dismiss(toast);
         
         toast.appendChild(content);
