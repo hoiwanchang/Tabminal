@@ -46,6 +46,7 @@ export class TerminalSession {
         this.captureBuffer = '';
         this.captureStartedAt = null;
         this.lastExecution = null;
+        this.skipNextShellLog = false;
 
         this.ansiParser = new AnsiParser({
             inst_o: (s) => {
@@ -350,8 +351,14 @@ export class TerminalSession {
     }
 
     async _handleAiCommand(prompt) {
+        // Prevent duplicate logging from shell integration
+        this.skipNextShellLog = true;
+
         // Ensure clean line start and set Cyan color
         this._broadcast({ type: 'output', data: '\r\x1b[K\x1b[36m' });
+        
+        const startTime = new Date();
+        let fullResponse = '';
 
         try {
             const streamCallback = (chunk) => {
@@ -363,15 +370,39 @@ export class TerminalSession {
                 }
             };
 
-            await alan.prompt(prompt, { 
+            const result = await alan.prompt(prompt, { 
                 stream: streamCallback,
                 delta: true
             });
             
+            if (result && result.text) {
+                fullResponse = result.text;
+            }
+            
             // End color and new line
             this._broadcast({ type: 'output', data: '\x1b[0m\r\n' });
+
+            // Log Execution
+            this._logCommandExecution({
+                command: 'ai',
+                exitCode: 0,
+                input: prompt,
+                output: fullResponse,
+                startedAt: startTime,
+                completedAt: new Date()
+            });
+
         } catch (e) {
             this._broadcast({ type: 'output', data: `\x1b[31mAI Error: ${e.message}\x1b[0m\r\n` });
+            
+            this._logCommandExecution({
+                command: 'ai',
+                exitCode: 1,
+                input: prompt,
+                output: `AI Error: ${e.message}`,
+                startedAt: startTime,
+                completedAt: new Date()
+            });
         }
         
         // Resume PTY output
@@ -411,6 +442,13 @@ export class TerminalSession {
     }
 
     _handleExitCodeSequence(exitCodeStr, cmdB64) {
+        if (this.skipNextShellLog) {
+            this.skipNextShellLog = false;
+            this.captureBuffer = '';
+            this.captureStartedAt = null;
+            return;
+        }
+
         const exitCode = Number.parseInt(exitCodeStr, 10);
         const command = this._decodeCommandSafe(cmdB64);
 
