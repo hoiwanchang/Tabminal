@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Icon Generator</title>
+    <style>body { background: #eee; font-family: sans-serif; padding: 20px; }</style>
+</head>
+<body>
+    <h2>Tabminal Icon Generator</h2>
+    <p>1. Allow the page to load the SVG.</p>
+    <p>2. Click the link below to download the PNG.</p>
+    <p>3. Save it as <code>public/apple-touch-icon.png</code>.</p>
+    
+    <canvas id="c180" width="180" height="180" style="border:1px solid #ccc"></canvas>
+    <div id="links" style="margin-top: 20px;"></div>
+
+    <script>
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.getElementById('c180');
+            const ctx = canvas.getContext('2d');
+            
+            // Draw Background (Solarized Base03)
+            ctx.fillStyle = '#002b36';
+            ctx.fillRect(0, 0, 180, 180);
+            
+            // Draw SVG centered and scaled
+            // Assume SVG is square. Padding 20px.
+            ctx.drawImage(img, 20, 20, 140, 140);
+            
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'apple-touch-icon.png';
+            link.style.display = 'inline-block';
+            link.style.padding = '10px 20px';
+            link.style.background = '#268bd2';
+            link.style.color = 'white';
+            link.style.textDecoration = 'none';
+            link.style.borderRadius = '5px';
+            link.innerText = 'Download apple-touch-icon.png';
+            
+            document.getElementById('links').appendChild(link);
+        };
+        img.src = 'favicon.svg';
+    </script>
+</body>
+</html>
