@@ -808,6 +808,17 @@ body {
     pointer-events: none;
 }
 
+#heartbeat-canvas {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: env(safe-area-inset-bottom, 0px);
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
 .toast {
     background-color: var(--bg-surface);
     color: var(--text-base);

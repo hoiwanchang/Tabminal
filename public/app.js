@@ -1078,11 +1078,75 @@ async function syncSessions() {
 
 let lastSystemData = null;
 let lastLatency = 0;
+const latencyHistory = new Array(100).fill(0); // Keep last 100 points
+const heartbeatCanvas = document.getElementById('heartbeat-canvas');
+const heartbeatCtx = heartbeatCanvas ? heartbeatCanvas.getContext('2d') : null;
+
+function drawHeartbeat() {
+    if (!heartbeatCtx || !heartbeatCanvas) return;
+    
+    const width = heartbeatCanvas.clientWidth;
+    const height = heartbeatCanvas.clientHeight;
+    
+    if (height === 0) return; // Hidden
+
+    if (heartbeatCanvas.width !== width || heartbeatCanvas.height !== height) {
+        heartbeatCanvas.width = width;
+        heartbeatCanvas.height = height;
+    }
+
+    heartbeatCtx.clearRect(0, 0, width, height);
+    
+    // Draw smooth curve
+    heartbeatCtx.beginPath();
+    heartbeatCtx.strokeStyle = '#268bd2';
+    heartbeatCtx.lineWidth = 1.5;
+    heartbeatCtx.lineJoin = 'round';
+    
+    const step = width / (latencyHistory.length - 1);
+    const maxLatency = 200;
+    
+    const getY = (val) => height - (Math.min(val, maxLatency) / maxLatency) * height;
+    
+    // Start at first point
+    heartbeatCtx.moveTo(0, getY(latencyHistory[0]));
+    
+    // Use quadratic curves for smoothing
+    for (let i = 1; i < latencyHistory.length - 2; i++) {
+        const x1 = i * step;
+        const y1 = getY(latencyHistory[i]);
+        const x2 = (i + 1) * step;
+        const y2 = getY(latencyHistory[i + 1]);
+        
+        const xc = (x1 + x2) / 2;
+        const yc = (y1 + y2) / 2;
+        
+        heartbeatCtx.quadraticCurveTo(x1, y1, xc, yc);
+    }
+    
+    // Connect last few points
+    for (let i = latencyHistory.length - 2; i < latencyHistory.length; i++) {
+        heartbeatCtx.lineTo(i * step, getY(latencyHistory[i]));
+    }
+
+    heartbeatCtx.stroke();
+    
+    // Draw fill
+    heartbeatCtx.lineTo(width, height);
+    heartbeatCtx.lineTo(0, height);
+    heartbeatCtx.fillStyle = 'rgba(38, 139, 210, 0.1)';
+    heartbeatCtx.fill();
+}
 
 function updateSystemStatus(system, latency) {
     if (!systemStatusBarEl) return;
     if (system) lastSystemData = system;
-    if (latency !== null && latency !== undefined) lastLatency = latency;
+    if (latency !== null && latency !== undefined) {
+        lastLatency = latency;
+        latencyHistory.push(latency);
+        latencyHistory.shift();
+        drawHeartbeat();
+    }
     
     const data = system || lastSystemData;
     if (!data) return;
