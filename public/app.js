@@ -1082,6 +1082,9 @@ const latencyHistory = []; // Raw data, variable length
 const DISPLAY_POINTS = 100;
 const targetDisplayData = new Array(DISPLAY_POINTS).fill(0);
 const currentDisplayData = new Array(DISPLAY_POINTS).fill(0);
+const startDisplayData = new Array(DISPLAY_POINTS).fill(0);
+let transitionStartTime = 0;
+const TRANSITION_DURATION = 1000; // Match heartbeat interval
 
 const heartbeatCanvas = document.getElementById('heartbeat-canvas');
 const heartbeatCtx = heartbeatCanvas ? heartbeatCanvas.getContext('2d') : null;
@@ -1094,7 +1097,6 @@ function updateCanvasSize() {
     }
     
     // Only render if we have a meaningful gap (> 10px)
-    // This strictly follows the available space logic.
     if (bottomGap < 10) {
         heartbeatCanvas.style.height = '0px';
         heartbeatCanvas.style.display = 'none';
@@ -1189,14 +1191,21 @@ function drawHeartbeat() {
 function animateHeartbeat() {
     requestAnimationFrame(animateHeartbeat);
     
+    const now = performance.now();
+    let progress = (now - transitionStartTime) / TRANSITION_DURATION;
+    if (progress > 1) progress = 1;
+    
+    // Optional: Smooth easing (EaseOutQuad)
+    // progress = progress * (2 - progress);
+    
     let needsRedraw = false;
     for (let i = 0; i < DISPLAY_POINTS; i++) {
-        const diff = targetDisplayData[i] - currentDisplayData[i];
-        if (Math.abs(diff) > 0.01) {
-            currentDisplayData[i] += diff * 0.05;
+        // Interpolate between start and target based on time
+        const newVal = startDisplayData[i] + (targetDisplayData[i] - startDisplayData[i]) * progress;
+        
+        if (Math.abs(newVal - currentDisplayData[i]) > 0.001) {
+            currentDisplayData[i] = newVal;
             needsRedraw = true;
-        } else {
-            currentDisplayData[i] = targetDisplayData[i];
         }
     }
     
@@ -1214,8 +1223,15 @@ function updateSystemStatus(system, latency) {
         latencyHistory.push(latency);
         if (latencyHistory.length > 100) latencyHistory.shift();
         
+        // Snapshot current state as start
+        for(let i=0; i<DISPLAY_POINTS; i++) startDisplayData[i] = currentDisplayData[i];
+        
+        // Calculate new target
         const resampled = resample(latencyHistory, DISPLAY_POINTS);
         for(let i=0; i<DISPLAY_POINTS; i++) targetDisplayData[i] = resampled[i];
+        
+        // Reset timer
+        transitionStartTime = performance.now();
     }
     
     const data = system || lastSystemData;
