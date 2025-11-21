@@ -813,10 +813,13 @@ body {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: env(safe-area-inset-bottom, 0px);
+    height: max(env(safe-area-inset-bottom, 0px), 60px); /* Taller area */
     z-index: 100;
     pointer-events: none;
-    opacity: 0.3;
+    opacity: 0.5;
+    /* Optional: Add gradient to blend with terminal */
+    mask-image: linear-gradient(to top, black 50%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to top, black 50%, transparent 100%);
 }
 
 .toast {
