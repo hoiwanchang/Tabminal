@@ -144,20 +144,19 @@ body {
     .tab-item:hover {
         background-color: rgba(88, 110, 117, 0.2);
     }
+}
 
-    .tab-item:hover .close-tab-button,
-    .tab-item:hover .toggle-editor-btn {
-        opacity: 1;
-    }
+.tab-item:hover .close-tab-button,
+.tab-item:hover .toggle-editor-btn {
+    opacity: 1;
 }
 
 .tab-item:hover .tab-info-overlay {
     transform: translateY(100%); /* Slide down out of view */
 }
 
-/* Always show buttons on active tab (Mobile friendly) */
-.tab-item.active .close-tab-button,
-.tab-item.active .toggle-editor-btn {
+/* Only pin toggle button if editor is open */
+.tab-item.editor-open .toggle-editor-btn {
     opacity: 1;
 }
 
