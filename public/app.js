@@ -1647,15 +1647,17 @@ class NotificationManager {
     }
 
     send(title, body) {
-        if (!this.hasPermission) return;
+        if (!this.hasPermission) return false;
         try {
             new Notification(title, {
                 body: body,
                 icon: '/favicon.svg',
                 tag: 'tabminal-status'
             });
+            return true;
         } catch (e) {
             console.error('Notification failed:', e);
+            return false;
         }
     }
 }
@@ -1725,7 +1727,7 @@ class ToastManager {
 
     startTimer(toast) {
         if (toast.dismissTimer) clearTimeout(toast.dismissTimer);
-        toast.dismissTimer = setTimeout(() => this.dismiss(toast), 7000);
+        toast.dismissTimer = setTimeout(() => this.dismiss(toast), 5000);
     }
 
     extendLife(toast) {
@@ -1773,14 +1775,14 @@ function setStatus(status) {
     currentConnectionStatus = status;
 
     if (status === 'reconnecting') {
-        toastManager.show('Connection', 'Lost connection. Reconnecting...', 'warning');
-        notificationManager.send('Tabminal Disconnected', 'Attempting to reconnect...');
+        const sent = notificationManager.send('Tabminal Disconnected', 'Attempting to reconnect...');
+        if (!sent) toastManager.show('Connection', 'Lost connection. Reconnecting...', 'warning');
     } else if (status === 'connected' && prevStatus === 'reconnecting') {
-        toastManager.show('Connection', 'Connection restored.', 'success');
-        notificationManager.send('Tabminal Connected', 'Connection restored.');
+        const sent = notificationManager.send('Tabminal Connected', 'Connection restored.');
+        if (!sent) toastManager.show('Connection', 'Connection restored.', 'success');
     } else if (status === 'terminated') {
-        toastManager.show('Connection', 'Session terminated.', 'error');
-        notificationManager.send('Tabminal Terminated', 'Session has ended.');
+        const sent = notificationManager.send('Tabminal Terminated', 'Session has ended.');
+        if (!sent) toastManager.show('Connection', 'Session terminated.', 'error');
     } else if (status === 'connected' && !prevStatus) {
         toastManager.show('Connection', 'Connected to server.', 'success');
     }
