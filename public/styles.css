@@ -76,7 +76,7 @@ body {
     width: 100%;
     min-width: 0; /* Allow shrinking */
     overflow: hidden; /* Force children to fit */
-    border-bottom: 1px solid var(--border-color);
+    /* border-bottom removed, moved to virtual-keys */
 }
 
 .sidebar {
@@ -374,7 +374,66 @@ body {
     /* margin-top removed since we have padding now */
 }
 
-/* Login Modal */
+/* Virtual Keyboard Bar */
+.virtual-keys {
+    height: 38px;
+    background-color: var(--bg-surface);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color); /* The main bottom divider */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    gap: 6px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    z-index: 20;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+}
+.virtual-keys::-webkit-scrollbar {
+    display: none;
+}
+
+/* Only show on touch devices */
+@media (pointer: coarse) {
+    .virtual-keys {
+        display: flex !important;
+    }
+}
+
+.virtual-keys button {
+    background: var(--bg-base);
+    border: 1px solid var(--border-color);
+    color: var(--text-base);
+    border-radius: 4px;
+    height: 28px;
+    min-width: 36px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+    flex-shrink: 0;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.virtual-keys button:active, .virtual-keys button.active {
+    background: var(--accent-color);
+    color: white;
+    border-color: var(--accent-color);
+    transform: translateY(1px);
+}
+
+/* Adjust terminal container to accommodate keys */
+.terminal-container {
+    /* ... existing ... */
+}
 .modal {
     position: fixed;
     z-index: 1000;
