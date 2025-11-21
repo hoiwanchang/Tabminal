@@ -287,7 +287,7 @@ class EditorManager {
             this.layout();
         } else {
             if (this.currentSession) {
-                setTimeout(() => this.currentSession.mainFitAddon.fit(), 50);
+                requestAnimationFrame(() => this.currentSession.mainFitAddon.fit());
             }
         }
     }
@@ -596,7 +596,7 @@ class EditorManager {
                 }
                 this.editor.focus();
                 // Force layout to ensure content is visible
-                setTimeout(() => this.editor.layout(), 50);
+                requestAnimationFrame(() => this.editor.layout());
             }
         }
     }
