@@ -20,6 +20,36 @@ const editorPane = document.getElementById('editor-pane');
 const HEARTBEAT_INTERVAL_MS = 1000;
 // #endregion
 
+// #region Sidebar Toggle (Mobile)
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+if (sidebarToggle && sidebar && sidebarOverlay) {
+    const closeSidebar = () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+    };
+
+    sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('open');
+    });
+
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // Close sidebar when a tab is clicked (Mobile UX)
+    if (tabListEl) {
+        tabListEl.addEventListener('click', (e) => {
+            // Only close if we actually clicked a tab item (not empty space)
+            if (e.target.closest('.tab-item') && window.innerWidth < 768) {
+                closeSidebar();
+            }
+        });
+    }
+}
+// #endregion
+
 // #region Auth Manager
 class AuthManager {
     constructor() {
@@ -1277,25 +1307,8 @@ function animateHeartbeat() {
 animateHeartbeat();
 
 function updateSystemStatus(system, latency) {
-    if (!systemStatusBarEl) return;
-    
-    // Ensure DOM Structure
-    let textGroup = document.getElementById('status-text-group');
-    let desktopCanvas = document.getElementById('desktop-heartbeat-canvas');
-    
-    if (!textGroup) {
-        systemStatusBarEl.innerHTML = '';
-        
-        textGroup = document.createElement('div');
-        textGroup.id = 'status-text-group';
-        textGroup.className = 'status-text-group';
-        systemStatusBarEl.appendChild(textGroup);
-        
-        desktopCanvas = document.createElement('canvas');
-        desktopCanvas.id = 'desktop-heartbeat-canvas';
-        desktopCanvas.className = 'desktop-heartbeat-canvas';
-        systemStatusBarEl.appendChild(desktopCanvas);
-    }
+    const textGroup = document.getElementById('status-text-group');
+    if (!textGroup) return; // Should exist in HTML now
 
     if (system) lastSystemData = system;
     if (latency !== null && latency !== undefined) {

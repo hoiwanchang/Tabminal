@@ -104,11 +104,16 @@
     </head>
     <body>
         <div id="system-status-bar" class="system-status-bar">
-            <!-- Status items will be injected here -->
+            <button id="sidebar-toggle" class="sidebar-toggle" aria-label="Toggle Menu">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            <div id="status-text-group" class="status-text-group"></div>
+            <canvas id="desktop-heartbeat-canvas" class="desktop-heartbeat-canvas"></canvas>
         </div>
         <div id="notification-container" class="notification-container"></div>
         <canvas id="heartbeat-canvas"></canvas>
         <div class="app-layout">
+            <div id="sidebar-overlay" class="sidebar-overlay"></div>
             <aside id="sidebar" class="sidebar">
                 <ul id="tab-list" class="tab-list">
                     <!-- Tabs will be dynamically inserted here -->

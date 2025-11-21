@@ -91,6 +91,64 @@ body {
     border-right: 1px solid var(--border-color);
 }
 
+/* Sidebar Toggle */
+.sidebar-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.sidebar-toggle:hover { color: var(--text-highlight); }
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 800; /* Below sidebar (900/1000), above content */
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    transition: opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.sidebar-overlay.open {
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Mobile Sidebar Logic */
+@media (max-width: 767px) {
+    .sidebar-toggle {
+        display: block;
+    }
+    
+    .sidebar {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 240px; /* Slightly wider for touch */
+        z-index: 900;
+        transform: translateX(-100%); /* Hide off-screen */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 4px 0 12px rgba(0,0,0,0.5);
+        border-right: 1px solid var(--border-color);
+    }
+    
+    .sidebar.open {
+        transform: translateX(0);
+    }
+}
+
 .tab-list {
     list-style: none;
     margin: 0;
