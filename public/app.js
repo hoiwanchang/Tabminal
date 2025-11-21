@@ -1915,22 +1915,54 @@ if (virtualKeys) {
         session.mainTerm.focus();
     };
 
-    virtualKeys.addEventListener('click', (e) => {
-        const btn = e.target.closest('button');
-        if (btn) handleKey(btn.dataset.key, btn);
-    });
-    
+    let repeatTimer = null;
+    let repeatStartTimer = null;
+
+    const stopRepeat = () => {
+        clearTimeout(repeatStartTimer);
+        clearInterval(repeatTimer);
+        repeatStartTimer = null;
+        repeatTimer = null;
+    };
+
+    const startRepeat = (btn) => {
+        stopRepeat();
+        const key = btn.dataset.key;
+        
+        // Immediate trigger
+        handleKey(key, btn);
+        
+        // Delay before repeating
+        repeatStartTimer = setTimeout(() => {
+            repeatTimer = setInterval(() => {
+                handleKey(key, btn);
+            }, 80); // Fast repeat (12.5hz)
+        }, 700); // Initial delay
+    };
+
+    // Touch Events
     virtualKeys.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button')) e.preventDefault();
+        const btn = e.target.closest('button');
+        if (btn) {
+            e.preventDefault(); // Prevent ghost clicks and focus loss
+            startRepeat(btn);
+        }
     }, { passive: false });
-    
-    virtualKeys.addEventListener('touchend', (e) => {
+
+    virtualKeys.addEventListener('touchend', stopRepeat);
+    virtualKeys.addEventListener('touchcancel', stopRepeat);
+
+    // Mouse Events (Desktop testing)
+    virtualKeys.addEventListener('mousedown', (e) => {
         const btn = e.target.closest('button');
         if (btn) {
             e.preventDefault();
-            handleKey(btn.dataset.key, btn);
+            startRepeat(btn);
         }
-    }, { passive: false });
+    });
+
+    // Global mouseup to catch release outside button
+    window.addEventListener('mouseup', stopRepeat);
 }
 
 // Start the app
