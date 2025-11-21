@@ -7,7 +7,7 @@ import { parseArgs } from 'node:util';
 const DEFAULT_CONFIG = {
     host: '127.0.0.1',
     port: 9846,
-    heartbeatInterval: 30000,
+    heartbeatInterval: 10000,
     historyLimit: 524288,
     acceptTerms: false,
     password: null,

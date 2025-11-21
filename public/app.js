@@ -852,69 +852,15 @@ class Session {
     connect() {
         if (!auth.isAuthenticated) return;
 
+        // Prevent duplicate connection attempts
+        if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+            return;
+        }
+
         const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
         const endpoint = `${protocol}://${window.location.host}/ws/${this.id}`;
         
-        // Pass auth token in protocol or query param? 
-        // Standard WebSocket API doesn't support custom headers.
-        // We can use the 'Sec-WebSocket-Protocol' header (subprotocol) to pass the token.
-        // Or query parameter. Query parameter is easier to log but visible.
-        // Let's use subprotocol or just rely on the initial HTTP upgrade request which *does* send cookies/headers?
-        // Wait, browser WebSocket API does NOT allow setting custom headers.
-        // Common workaround: Put token in the subprotocol array.
-        // `new WebSocket(url, [token])`
-        // But the server needs to accept it.
-        // Alternatively, use a query parameter `?token=...`
-        // Let's use query parameter for simplicity in this context, or subprotocol.
-        // Requirement said: "header中攜帶這個編碼過的密碼".
-        // Browser JS WebSocket cannot set headers.
-        // However, if we use a library or if we are in a specific env... no, this is standard browser.
-        // Workaround: The initial HTTP Upgrade request is a standard HTTP request.
-        // But we can't add headers to it in JS.
-        // We MUST use query param or subprotocol.
-        // Let's use subprotocol as it's cleaner than query param in logs.
-        // But `ws` library on server needs to handle it.
-        // `verifyClient` in `ws` receives `info.req`.
-        // If we use subprotocol, it appears in `Sec-WebSocket-Protocol` header.
-        // Let's try to pass it as a subprotocol.
-        // Note: The token is a hex string.
-        
-        // Actually, let's use query param for maximum compatibility if headers are impossible.
-        // But wait, the requirement explicitly said "header".
-        // "之後的請求都會在header中攜帶這個編碼過的密碼... ws api都需要有這個權限限制"
-        // If the user insists on header for WS, they might assume we can control it.
-        // Since we can't in browser, I will implement it via `Sec-WebSocket-Protocol` which IS a header.
-        // Server side `verifyClient` can read `sec-websocket-protocol`.
-        
-        // Wait, `verifyClient` in `src/auth.mjs` checks `req.headers['authorization']`.
-        // I need to update `src/auth.mjs` or `src/server.mjs` to also check `sec-websocket-protocol` or query param.
-        // Let's stick to the plan: I will modify the client to send it via subprotocol, 
-        // AND I will assume I need to fix the server side to look there if 'authorization' is missing.
-        // OR, I can use a query param and map it to authorization header in the server before auth check?
-        // Let's use the subprotocol approach.
-        
-        // But wait, `ws` server expects the subprotocol to be negotiated.
-        // If I send `new WebSocket(url, [token])`, the server must respond with that protocol or it fails?
-        // Actually, `verifyClient` runs *before* negotiation.
-        
-        // Let's try to use the subprotocol.
-        // But `token` might have characters invalid for protocol? Hex is fine.
-        
-        // REVISION: I will use a query parameter `?auth=TOKEN` for WebSocket because it's the most robust way in browsers without cookies.
-        // And I will update the server to check that too.
-        // Wait, I can't update server easily now without another tool call.
-        // Let's check `src/auth.mjs` again. It checks `req.headers['authorization']`.
-        // I should have thought of this.
-        // I will use `verifyClient` to check `req.url` for query param if header is missing.
-        // But I already wrote `src/auth.mjs`.
-        // I will update `src/auth.mjs` to check query param as well.
-        
-        // Let's update the client to send it via query param.
-        
-        // Wait, I can use `document.cookie`? No, stateless.
-        
-        // Let's use the query param `?token=...`
-        
+        // Using query param for auth token
         this.socket = new WebSocket(`${endpoint}?token=${auth.token}`);
 
         this.socket.addEventListener('open', () => {
@@ -929,25 +875,12 @@ class Session {
         });
 
         this.socket.addEventListener('close', (event) => {
-            // 400-499 codes usually mean auth failure or bad request in WS handshake
-            // But WS close codes are different. 
-            // If handshake fails (401), the `error` event fires, then `close`.
-            // The close code might be 1006 (abnormal).
-            
-            if (this.shouldReconnect) {
-                // If auth failed, we shouldn't reconnect blindly.
-                // But how do we know it was auth failure?
-                // Browser WebSocket API gives very little info on handshake failure.
-                // We rely on the HTTP heartbeat to detect auth failure and stop everything.
-                
-                const wait = Math.min(5000, 500 * 2 ** this.reconnectAttempts);
-                this.reconnectAttempts++;
-                this.retryTimer = setTimeout(() => this.connect(), wait);
-            }
+            // We rely on the global heartbeat (syncSessions) to handle reconnection.
+            // This event listener just allows the socket to be garbage collected.
         });
         
         this.socket.addEventListener('error', () => {
-            // Often fires on 401
+            // Often fires on 401 or connection refused
         });
     }
 
@@ -1048,6 +981,14 @@ async function fetchExpandedPaths() {
 
 async function syncSessions() {
     if (!auth.isAuthenticated) return;
+
+    // Check WebSocket health for all active sessions
+    for (const session of state.sessions.values()) {
+        if (!session.socket || session.socket.readyState === WebSocket.CLOSED) {
+            // console.log(`[Heartbeat] Session ${session.id} disconnected. Reconnecting...`);
+            session.connect();
+        }
+    }
 
     const updates = { sessions: [] };
     for (const [id, pending] of pendingChanges.sessions) {
