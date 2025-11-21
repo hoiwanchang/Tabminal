@@ -1078,8 +1078,11 @@ async function syncSessions() {
 
 let lastSystemData = null;
 let lastLatency = 0;
-const DISPLAY_POINTS = 100;
-const latencyHistory = new Array(DISPLAY_POINTS).fill(0); 
+const TOTAL_POINTS = 110;
+const VISIBLE_POINTS = 100;
+const BUFFER_POINTS = 5;
+const latencyHistory = new Array(TOTAL_POINTS).fill(0); 
+let hasInitializedHistory = false;
 let lastUpdateTime = performance.now();
 let smoothedMaxVal = 1;
 
@@ -1135,7 +1138,7 @@ function drawHeartbeat() {
     // Cap at 1.0 to prevent overscroll gaps if network lags
     const progress = Math.min((now - lastUpdateTime) / 1000, 1.0); 
     
-    const step = width / (DISPLAY_POINTS - 1);
+    const step = width / VISIBLE_POINTS;
     
     // Smooth Scaling
     let maxVal = 0;
@@ -1154,7 +1157,8 @@ function drawHeartbeat() {
     const len = latencyHistory.length;
     
     // Helper to get X coordinate for index i
-    const getX = (i) => width + step * (2 - len - progress + i);
+    // Aligns the tape so that Index `len - BUFFER_POINTS - 1` is at the Right Edge (width).
+    const getX = (i) => width + step * (BUFFER_POINTS - len + 1 + i - progress);
     const getVal = (v) => (v === -1 ? 0 : v);
 
     // 1. Draw Fill (Background) - Treat -1 as 0
@@ -1232,12 +1236,22 @@ function updateSystemStatus(system, latency) {
     if (!systemStatusBarEl) return;
     if (system) lastSystemData = system;
     if (latency !== null && latency !== undefined) {
+        // Initialize history with random data on first real packet to avoid empty graph
+        if (!hasInitializedHistory && latency > 0) {
+            hasInitializedHistory = true;
+            // Generate fake history ending near 'latency'
+            // Pure random noise between 10 and 80
+            for (let i = 0; i < TOTAL_POINTS; i++) {
+                latencyHistory[i] = 10 + Math.random() * 70;
+            }
+        }
+
         lastLatency = latency;
         lastUpdateTime = performance.now();
         latencyHistory.push(latency);
         // Keep enough history to fill screen + buffer
         // We need DISPLAY_POINTS + 1 to scroll smoothly
-        if (latencyHistory.length > DISPLAY_POINTS) latencyHistory.shift();
+        if (latencyHistory.length > TOTAL_POINTS) latencyHistory.shift();
     }
     
     const data = system || lastSystemData;
