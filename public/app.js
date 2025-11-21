@@ -359,7 +359,14 @@ class EditorManager {
         if (!this.currentSession || !this.currentSession.editorState.isVisible) return;
         this.currentSession.mainFitAddon.fit();
         if (this.editor) {
-            this.editor.layout();
+            const width = this.pane.clientWidth;
+            const height = this.pane.clientHeight - 35; // Subtract fixed safety margin
+            
+            if (width > 0 && height > 0) {
+                this.editor.layout({ width, height });
+            } else {
+                this.editor.layout();
+            }
         }
     }
 
@@ -1844,22 +1851,4 @@ async function initApp() {
 
 // Start the app
 initApp();
-
-// Force Editor Content to Match Container Size
-setInterval(() => {
-    if (!editorManager || !editorManager.editor) return;
-    
-    const pane = editorManager.pane;
-    if (pane.offsetParent === null) return;
-
-    const width = pane.clientWidth;
-    let height = pane.clientHeight;
-
-    // Subtract fixed safety margin
-    height -= 35;
-    
-    if (width > 0 && height > 0) {
-        editorManager.editor.layout({ width, height });
-    }
-}, 1000);
 // #endregion
