@@ -314,12 +314,12 @@ body {
     align-items: center;
     flex-shrink: 0;
     white-space: nowrap;
-    padding-right: 15px;
+    padding-right: 0;
 }
 
 .desktop-heartbeat-canvas {
     flex-grow: 1;
-    height: 16px; /* Match text height roughly */
+    height: 12px; /* Match 11px text height perfectly */
     min-width: 50px;
     display: none; /* Managed by JS */
     opacity: 1;

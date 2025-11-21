@@ -1188,11 +1188,14 @@ function drawHeartbeat() {
     smoothedMaxVal += (effectiveMax - smoothedMaxVal) * 0.05;
     
     const verticalRange = useMaxHeight ? smoothedMaxVal : (smoothedMaxVal / 0.8);
-    const getY = (val) => height - (val / verticalRange) * height;
+    
+    const padding = 3;
+    const drawHeight = height - (padding * 2);
+    const getY = (val) => (height - padding) - (val / verticalRange) * drawHeight;
 
     ctx.beginPath();
     ctx.strokeStyle = '#268bd2';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.lineJoin = 'round';
 
     const len = latencyHistory.length;
@@ -1234,7 +1237,7 @@ function drawHeartbeat() {
     }
 
     // 2. Draw Lines
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 1.2;
     ctx.lineJoin = 'round';
 
     for (let i = 0; i < len - 1; i++) {
