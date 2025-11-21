@@ -357,6 +357,22 @@ export class TerminalSession {
         // Ensure clean line start and set Cyan color
         this._writeToLogAndBroadcast('\r\x1b[K\x1b[36m');
         
+        // Gather Context
+        const contextLog = [];
+        if (this.manager && this.manager.sessions) {
+            for (const [id, session] of this.manager.sessions) {
+                if (!session.executions || session.executions.length === 0) continue;
+                
+                contextLog.push({
+                    sessionId: id,
+                    title: session.title,
+                    cwd: session.cwd,
+                    history: session.executions // Full history
+                });
+            }
+        }
+        console.log('[AI Context]', JSON.stringify(contextLog, null, 2));
+        
         const startTime = new Date();
         let fullResponse = '';
 
@@ -777,6 +793,14 @@ export class TerminalSession {
     }
 
     _logCommandExecution(entry) {
+        // Filter out internal shell integration commands
+        if (entry.input && entry.input.includes('export PROMPT_COMMAND')) {
+            return;
+        }
+        if (entry.command === '__bash_prompt') {
+            return;
+        }
+
         const duration =
             entry.startedAt && entry.completedAt
                 ? entry.completedAt.getTime() - entry.startedAt.getTime()
