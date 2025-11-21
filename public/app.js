@@ -1079,8 +1079,7 @@ async function syncSessions() {
 let lastSystemData = null;
 let lastLatency = 0;
 const DISPLAY_POINTS = 100;
-// Initialize with extra points to cover left edge during scrolling
-const latencyHistory = new Array(DISPLAY_POINTS + 2).fill(0); 
+const latencyHistory = new Array(DISPLAY_POINTS).fill(0); 
 let lastUpdateTime = performance.now();
 let smoothedMaxVal = 1;
 
@@ -1207,7 +1206,7 @@ function updateSystemStatus(system, latency) {
         latencyHistory.push(latency);
         // Keep enough history to fill screen + buffer
         // We need DISPLAY_POINTS + 1 to scroll smoothly
-        if (latencyHistory.length > DISPLAY_POINTS + 2) latencyHistory.shift();
+        if (latencyHistory.length > DISPLAY_POINTS) latencyHistory.shift();
     }
     
     const data = system || lastSystemData;
