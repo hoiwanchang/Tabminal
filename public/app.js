@@ -1338,6 +1338,30 @@ function createTabElement(session) {
     tab.appendChild(overlay);
     
     tab.onclick = () => switchToSession(session.id);
+
+    // Fix iOS double-tap issue
+    let touchStartY = 0;
+    let isScrolling = false;
+
+    tab.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        isScrolling = false;
+    }, { passive: true });
+
+    tab.addEventListener('touchmove', (e) => {
+        if (Math.abs(e.touches[0].clientY - touchStartY) > 5) {
+            isScrolling = true;
+        }
+    }, { passive: true });
+
+    tab.addEventListener('touchend', (e) => {
+        if (isScrolling) return;
+        // Allow buttons to handle their own events
+        if (e.target.closest('button') || e.target.closest('.file-tree-item')) return;
+        
+        if (e.cancelable) e.preventDefault(); // Prevent mouse emulation (hover/click)
+        switchToSession(session.id);
+    });
     
     return tab;
 }

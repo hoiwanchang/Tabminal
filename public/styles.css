@@ -140,7 +140,7 @@ body {
 }
 
 /* Desktop Hover Effects */
-@media (hover: hover) {
+@media (pointer: fine) {
     .tab-item:hover {
         background-color: rgba(88, 110, 117, 0.2);
     }
@@ -148,6 +148,10 @@ body {
     .tab-item:hover .close-tab-button,
     .tab-item:hover .toggle-editor-btn {
         opacity: 1;
+    }
+    
+    .tab-item:hover .tab-info-overlay {
+        transform: translateY(100%); /* Slide down out of view */
     }
 }
 
@@ -232,11 +236,7 @@ body {
     transition: transform 0.3s ease; /* Smooth slide transition */
 }
 
-@media (hover: hover) {
-    .tab-item:hover .tab-info-overlay {
-        transform: translateY(100%); /* Slide down out of view */
-    }
-}
+/* Overlay hover logic moved to main media query block */
 
 .tab-info-overlay .meta {
     font-size: 0.7rem;
