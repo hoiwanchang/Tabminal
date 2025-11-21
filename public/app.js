@@ -1105,13 +1105,18 @@ function updateCanvasSize() {
     }
 }
 
-// Catmull-Rom Spline Interpolation
-function catmullRom(p0, p1, p2, p3, t) {
-    const v0 = (p2 - p0) * 0.5;
-    const v1 = (p3 - p1) * 0.5;
+// Cubic B-Spline Interpolation
+// Creates a C2 continuous curve that approximates points, filtering noise for a premium look.
+function cubicBSpline(p0, p1, p2, p3, t) {
     const t2 = t * t;
-    const t3 = t * t2;
-    return (2 * p1 - 2 * p2 + v0 + v1) * t3 + (-3 * p1 + 3 * p2 - 2 * v0 - v1) * t2 + v0 * t + p1;
+    const t3 = t2 * t;
+    
+    const b0 = (1 - t) * (1 - t) * (1 - t) / 6;
+    const b1 = (3 * t3 - 6 * t2 + 4) / 6;
+    const b2 = (-3 * t3 + 3 * t2 + 3 * t + 1) / 6;
+    const b3 = t3 / 6;
+    
+    return p0 * b0 + p1 * b1 + p2 * b2 + p3 * b3;
 }
 
 function drawHeartbeat() {
@@ -1183,7 +1188,7 @@ function drawHeartbeat() {
         
         for (let t = 0; t <= 1; t += 0.1) {
             const x = getX(i) + t * step;
-            let val = catmullRom(p0, p1, p2, p3, t);
+            let val = cubicBSpline(p0, p1, p2, p3, t);
             if (val < 0) val = 0;
             heartbeatCtx.lineTo(x, getY(val));
         }
@@ -1216,7 +1221,7 @@ function drawHeartbeat() {
         
         for (let t = 0; t <= 1; t += 0.1) {
             const x = getX(i) + t * step;
-            let val = catmullRom(p0, p1, p2, p3, t);
+            let val = cubicBSpline(p0, p1, p2, p3, t);
             if (val < 0) val = 0;
             
             if (t === 0) heartbeatCtx.moveTo(x, getY(val));
