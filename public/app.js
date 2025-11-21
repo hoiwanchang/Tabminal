@@ -665,17 +665,20 @@ class Session {
             editorFlex: '2 1 0%'
         };
 
-        // Preview Terminal (Canvas renderer for performance)
-        this.previewTerm = new Terminal({
-            disableStdin: true,
-            cursorBlink: false,
-            allowTransparency: true,
-            fontSize: 10,
-            rows: this.rows,
-            cols: this.cols,
-            theme: { background: '#002b36', foreground: '#839496', cursor: 'transparent', selectionBackground: 'transparent' }
-        });
-        this.previewTerm.loadAddon(new CanvasAddon());
+        // Preview Terminal (Only on Desktop to save memory)
+        this.previewTerm = null;
+        if (window.innerWidth >= 768) {
+            this.previewTerm = new Terminal({
+                disableStdin: true,
+                cursorBlink: false,
+                allowTransparency: true,
+                fontSize: 10,
+                rows: this.rows,
+                cols: this.cols,
+                theme: { background: '#002b36', foreground: '#839496', cursor: 'transparent', selectionBackground: 'transparent' }
+            });
+            this.previewTerm.loadAddon(new CanvasAddon());
+        }
         this.wrapperElement = null;
 
         // Main Terminal
@@ -737,8 +740,10 @@ class Session {
         if (data.cols && data.rows && (data.cols !== this.cols || data.rows !== this.rows)) {
             this.cols = data.cols;
             this.rows = data.rows;
-            this.previewTerm.resize(this.cols, this.rows);
-            this.updatePreviewScale();
+            if (this.previewTerm) {
+                this.previewTerm.resize(this.cols, this.rows);
+                this.updatePreviewScale();
+            }
         }
 
         if (changed) {
@@ -747,9 +752,9 @@ class Session {
     }
 
     updatePreviewScale() {
-        if (!this.wrapperElement) return;
+        if (!this.wrapperElement || !this.previewTerm) return;
         requestAnimationFrame(() => {
-            if (!this.wrapperElement) return;
+            if (!this.wrapperElement || !this.previewTerm) return;
             this.wrapperElement.style.width = '';
             this.wrapperElement.style.height = '';
             this.wrapperElement.style.transform = '';
@@ -917,11 +922,11 @@ class Session {
     handleMessage(message) {
         switch (message.type) {
             case 'snapshot':
-                this.previewTerm.reset();
+                if (this.previewTerm) this.previewTerm.reset();
                 this.mainTerm.reset();
                 this.history = message.data || '';
                 this.isRestoring = true;
-                this.previewTerm.write(this.history);
+                if (this.previewTerm) this.previewTerm.write(this.history);
                 this.mainTerm.write(this.history, () => { this.isRestoring = false; });
                 break;
             case 'output':
@@ -938,7 +943,7 @@ class Session {
     }
 
     writeToTerminals(data) {
-        this.previewTerm.write(data);
+        if (this.previewTerm) this.previewTerm.write(data);
         this.mainTerm.write(data);
     }
 
@@ -960,7 +965,7 @@ class Session {
         this.socket?.close();
         
         try {
-            this.previewTerm.dispose();
+            if (this.previewTerm) this.previewTerm.dispose();
         } catch (e) {
             if (!e.message?.includes('onRequestRedraw')) {
                 console.warn('Error disposing preview terminal:', e);
@@ -1460,8 +1465,10 @@ function renderTabs() {
             
             // Mount preview
             session.wrapperElement = tab.querySelector('.preview-terminal-wrapper');
-            session.previewTerm.open(session.wrapperElement);
-            session.updatePreviewScale();
+            if (session.previewTerm) {
+                session.previewTerm.open(session.wrapperElement);
+                session.updatePreviewScale();
+            }
             session.updateTabUI();
         }
 
