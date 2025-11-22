@@ -593,6 +593,55 @@ body {
     min-height: 1.2em;
 }
 
+/* Shortcuts Modal Specifics */
+#shortcuts-modal {
+    background-color: rgba(0, 0, 0, 0.2); /* Subtle dimming only */
+    backdrop-filter: none;
+}
+
+.shortcuts-content {
+    max-width: 500px;
+    text-align: left;
+    background-color: rgba(0, 43, 54, 0.85); /* Semi-transparent base */
+    backdrop-filter: blur(12px); /* Strong blur on the panel itself */
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    color: var(--text-base);
+}
+
+.shortcuts-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+.shortcuts-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-base);
+}
+
+.shortcuts-list li:last-child {
+    border-bottom: none;
+}
+
+kbd {
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: 'Monaspace Neon', monospace;
+    font-size: 0.85em;
+    color: var(--text-highlight);
+    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+}
+
 /* Editor & Split View Styles */
 
 .terminal-wrapper {

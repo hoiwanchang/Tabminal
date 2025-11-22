@@ -180,6 +180,34 @@
                 <p id="login-error" class="error-message"></p>
             </div>
         </div>
+        <div id="shortcuts-modal" class="modal" style="display: none;">
+            <div class="modal-content shortcuts-content">
+                <h2>Keyboard Shortcuts</h2>
+                <ul class="shortcuts-list">
+                    <li>
+                        <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>T</kbd></div>
+                        <span>New Terminal</span>
+                    </li>
+                    <li>
+                        <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>W</kbd></div>
+                        <span>Close Terminal</span>
+                    </li>
+                    <li>
+                        <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>[</kbd> / <kbd>]</kbd></div>
+                        <span>Switch Terminal</span>
+                    </li>
+                    <li>
+                        <div><kbd>Ctrl</kbd> + <kbd>Alt</kbd> + <kbd>[</kbd> / <kbd>]</kbd></div>
+                        <span>Switch File</span>
+                    </li>
+                    <li>
+                        <div><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>?</kbd></div>
+                        <span>Show Help</span>
+                    </li>
+                </ul>
+                <button onclick="document.getElementById('shortcuts-modal').style.display='none'">Close</button>
+            </div>
+        </div>
         <script>
             (function() {
                 const t = Math.floor(Date.now() / 60000);

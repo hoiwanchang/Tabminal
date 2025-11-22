@@ -1985,9 +1985,24 @@ if (virtualKeys) {
 
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
-    if (!e.ctrlKey) return; // Ctrl is mandatory
-
     const key = e.key.toLowerCase();
+    
+    // ESC: Close Help Modal (No modifier needed)
+    if (key === 'escape') {
+        const modal = document.getElementById('shortcuts-modal');
+        if (modal && modal.style.display === 'flex') {
+            e.preventDefault();
+            modal.style.display = 'none';
+            // Restore focus
+            if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
+                state.sessions.get(state.activeSessionId).mainTerm.focus();
+            }
+            return;
+        }
+    }
+
+    if (!e.ctrlKey) return; // Ctrl is mandatory for others
+
     const code = e.code;
     
     // Ctrl + Shift Context
@@ -2004,6 +2019,29 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             if (state.activeSessionId) {
                 closeSession(state.activeSessionId);
+            }
+            return;
+        }
+        
+        // Ctrl + Shift + ?: Help
+        if (key === '?' || (code === 'Slash' && e.shiftKey)) {
+            e.preventDefault();
+            const modal = document.getElementById('shortcuts-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                // Steal focus from terminal
+                const closeBtn = modal.querySelector('button');
+                if (closeBtn) closeBtn.focus();
+                
+                modal.onclick = (ev) => {
+                    if (ev.target === modal) {
+                        modal.style.display = 'none';
+                        // Restore focus
+                        if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
+                            state.sessions.get(state.activeSessionId).mainTerm.focus();
+                        }
+                    }
+                };
             }
             return;
         }
