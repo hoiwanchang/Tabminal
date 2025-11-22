@@ -518,6 +518,53 @@ body {
     transform: translateY(1px);
 }
 
+.ctrl-keyboard {
+    position: absolute; /* Use absolute to follow body height (which respects keyboard) */
+    bottom: 38px; /* Above virtual keys */
+    left: 0;
+    width: 100%;
+    background: rgba(0, 43, 54, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border-color);
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 100;
+    transition: opacity 0.1s, transform 0.1s;
+    transform-origin: bottom center;
+}
+
+.ctrl-keyboard .row {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+}
+
+.ctrl-key {
+    flex: 1;
+    max-width: 40px;
+    height: 40px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: var(--text-highlight);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 18px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.ctrl-key.active {
+    background: var(--accent-color);
+    color: white;
+    transform: scale(1.5) translateY(-10px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    z-index: 10;
+}
+
 /* Adjust terminal container to accommodate keys */
 .terminal-container {
     /* ... existing ... */

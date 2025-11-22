@@ -1983,6 +1983,90 @@ if (virtualKeys) {
     window.addEventListener('mouseup', stopRepeat);
 }
 
+// Ctrl Drag Logic
+const ctrlBtn = document.getElementById('ctrl-btn');
+const ctrlKeyboard = document.getElementById('ctrl-keyboard');
+
+if (ctrlBtn && ctrlKeyboard) {
+    const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    ctrlKeyboard.innerHTML = rows.map(row => 
+        `<div class="row">
+            ${row.split('').map(char => `<div class="ctrl-key" data-char="${char}">${char}</div>`).join('')}
+        </div>`
+    ).join('');
+
+    const showKeyboard = () => {
+        ctrlKeyboard.style.display = 'flex';
+        ctrlKeyboard.style.opacity = '0';
+        ctrlKeyboard.style.transform = 'scaleY(0.5)';
+        requestAnimationFrame(() => {
+            ctrlKeyboard.style.opacity = '1';
+            ctrlKeyboard.style.transform = 'scaleY(1)';
+        });
+    };
+
+    const hideKeyboard = () => {
+        ctrlKeyboard.style.display = 'none';
+        document.querySelectorAll('.ctrl-key.active').forEach(el => el.classList.remove('active'));
+    };
+
+    let activeChar = null;
+
+    const handleMove = (e) => {
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const el = document.elementFromPoint(clientX, clientY);
+        const keyEl = el?.closest('.ctrl-key');
+        
+        document.querySelectorAll('.ctrl-key.active').forEach(k => k.classList.remove('active'));
+        if (keyEl) {
+            keyEl.classList.add('active');
+            activeChar = keyEl.dataset.char;
+            if (navigator.vibrate) navigator.vibrate(5);
+        } else {
+            activeChar = null;
+        }
+    };
+
+    const startDrag = (e) => {
+        e.preventDefault(); 
+        e.stopPropagation();
+        showKeyboard();
+        activeChar = null;
+        
+        const isTouch = e.type === 'touchstart';
+        const moveEvent = isTouch ? 'touchmove' : 'mousemove';
+        const endEvent = isTouch ? 'touchend' : 'mouseup';
+        
+        const onMove = (ev) => {
+            ev.preventDefault();
+            handleMove(ev);
+        };
+        
+        const onEnd = (ev) => {
+            window.removeEventListener(moveEvent, onMove);
+            window.removeEventListener(endEvent, onEnd);
+            hideKeyboard();
+            
+            if (activeChar && state.activeSessionId) {
+                const code = activeChar.charCodeAt(0) - 64;
+                const data = String.fromCharCode(code);
+                const session = state.sessions.get(state.activeSessionId);
+                if (session) {
+                    session.send({ type: 'input', data });
+                    if (navigator.vibrate) navigator.vibrate(20);
+                }
+            }
+        };
+        
+        window.addEventListener(moveEvent, onMove, { passive: false });
+        window.addEventListener(endEvent, onEnd);
+    };
+
+    ctrlBtn.addEventListener('touchstart', startDrag, { passive: false });
+    ctrlBtn.addEventListener('mousedown', startDrag);
+}
+
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
     const key = e.key.toLowerCase();
