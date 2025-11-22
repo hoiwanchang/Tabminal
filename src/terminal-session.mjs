@@ -41,13 +41,7 @@ export class TerminalSession {
             .join('\n');
         
         this.editorState = options.editorState || {};
-        
-        // Clean executions on load to remove legacy noise
-        const rawExecutions = options.executions || [];
-        this.executions = rawExecutions.filter(entry => {
-            if (entry.command && IGNORED_COMMANDS.some(ignored => entry.command.includes(ignored))) return false;
-            return true;
-        });
+        this.executions = options.executions || [];
 
         this.historyLimit = Math.max(1, options.historyLimit ?? DEFAULT_HISTORY_LIMIT);
         this.history = '';
@@ -402,38 +396,46 @@ export class TerminalSession {
         return { conversationHistory, pendingShellHistory };
     }
 
-    async _handleAiCommand(prompt) {
+    async _handleAiCommand(prompt, options = {}) {
         // Prevent duplicate logging from shell integration
         this.skipNextShellLog = true;
 
-        // Ensure clean line start and set Cyan color
-        this._writeToLogAndBroadcast('\r\x1b[K\x1b[36m');
-        
-        // Gather Context (Current Session Only)
-        let cleanHistory = [];
-        if (this.executions && this.executions.length > 0) {
-            cleanHistory = this.executions.filter(entry => {
-                if (entry.command && IGNORED_COMMANDS.some(ignored => entry.command.includes(ignored))) return false;
-                return true;
-            });
-        }
-        
-        // Build Context
-        const { conversationHistory, pendingShellHistory } = this._buildAiContext(cleanHistory);
-        
-        // Construct Current Prompt
-        const currentContext = `Recent Shell History:\n${pendingShellHistory}\nEnvironment:\n${this.env}\nCurrent Path: ${this.cwd}`;
-        const finalPrompt = `${currentContext}\n\nQuestion: ${prompt}`;
-        
-        console.log('[AI Context Build]');
-        console.log('History:', JSON.stringify(conversationHistory, null, 2));
-        console.log('Current Prompt Preview:', JSON.stringify(finalPrompt, null, 2));
-        
-        const startTime = new Date();
-        let fullResponse = '';
+        // Unified prefix for consistent spacing
+        const prefix = '\n\nTabminal AI:\n\n';
 
-        try {
-            const streamCallback = (chunk) => {
+                // Ensure clean line start, set Cyan color, and print prefix
+
+                this._writeToLogAndBroadcast(`\r\x1b[K\x1b[36m${prefix}`);
+
+                
+
+                // Gather Context (Current Session Only)
+
+                const cleanHistory = (this.executions && this.executions.length > 0) ? this.executions : [];
+
+                
+
+                // Build Context
+
+                const { conversationHistory, pendingShellHistory } = this._buildAiContext(cleanHistory);
+
+                
+
+                // Construct Current Prompt
+
+                const currentContext = `Recent Shell History:\n${pendingShellHistory}\nEnvironment:\n${this.env}\nCurrent Path: ${this.cwd}`;
+
+                const finalPrompt = `${currentContext}\n\nQuestion: ${prompt}`;
+
+                
+
+                const startTime = new Date();
+
+                let fullResponse = '';
+
+                
+
+                try {            const streamCallback = (chunk) => {
                 if (chunk && chunk.text) {
                     let text = chunk.text;
                     // Normalize newlines for terminal
@@ -547,7 +549,7 @@ export class TerminalSession {
             // Don't trigger on simple interruptions (SIGINT=130) or common non-errors?
             // 130 = Ctrl+C. Usually user intention.
             if (exitCode !== 130) {
-                this._handleAiCommand('The previous command failed. Please analyze the error in the history and provide a fix.');
+                this._handleAiCommand('The previous command failed. Please analyze the error in the history and provide a fix.', { isAutoFix: true });
             }
         }
     }
