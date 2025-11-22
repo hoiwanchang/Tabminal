@@ -1983,6 +1983,48 @@ if (virtualKeys) {
     window.addEventListener('mouseup', stopRepeat);
 }
 
+// Keyboard Shortcuts
+document.addEventListener('keydown', (e) => {
+    if (!e.ctrlKey || !e.shiftKey) return;
+
+    const key = e.key.toLowerCase();
+    const code = e.code;
+    
+    // Ctrl + Shift + T: New Tab
+    if (key === 't') {
+        e.preventDefault();
+        createNewSession();
+        return;
+    }
+    
+    // Ctrl + Shift + W: Close Tab
+    if (key === 'w') {
+        e.preventDefault();
+        if (state.activeSessionId) {
+            closeSession(state.activeSessionId);
+        }
+        return;
+    }
+    
+    // Ctrl + Shift + [ / ]: Switch Tab
+    if (code === 'BracketLeft' || code === 'BracketRight') {
+        e.preventDefault();
+        const direction = code === 'BracketLeft' ? -1 : 1;
+        
+        // If Alt is ALSO pressed, switch file? Or just keep Tab switching simple?
+        // You asked for "Ctrl Shift [ / ]" for Tab switching.
+        
+        const sessionIds = Array.from(state.sessions.keys());
+        if (sessionIds.length > 1) {
+            const currentIdx = sessionIds.indexOf(state.activeSessionId);
+            let newIdx = currentIdx + direction;
+            if (newIdx < 0) newIdx = sessionIds.length - 1;
+            if (newIdx >= sessionIds.length) newIdx = 0;
+            switchToSession(sessionIds[newIdx]);
+        }
+    }
+});
+
 // Start the app
 initApp();
 // #endregion
