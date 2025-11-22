@@ -2026,14 +2026,19 @@ if (modCtrl && modAlt && modShift && modSym && softKeyboard) {
     ).join('');
 
     const updateState = () => {
+        const anyActive = modifiers.ctrl || modifiers.alt || modifiers.shift || modifiers.sym;
+
         modCtrl.classList.toggle('active', modifiers.ctrl);
         modAlt.classList.toggle('active', modifiers.alt);
         modShift.classList.toggle('active', modifiers.shift);
-        modSym.classList.toggle('active', modifiers.sym);
         
-        softKeyboard.classList.toggle('shift-mode', modifiers.shift);
+        // SYM reflects overall visibility
+        modSym.classList.toggle('active', anyActive);
         
-        const anyActive = modifiers.ctrl || modifiers.alt || modifiers.shift || modifiers.sym;
+        // Visual Flip: Shift only if Ctrl is not active (to avoid confusion)
+        const isVisualShift = modifiers.shift && !modifiers.ctrl;
+        softKeyboard.classList.toggle('shift-mode', isVisualShift);
+        
         softKeyboard.style.display = anyActive ? 'flex' : 'none';
     };
 
@@ -2045,7 +2050,26 @@ if (modCtrl && modAlt && modShift && modSym && softKeyboard) {
     modCtrl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('ctrl'); });
     modAlt.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('alt'); });
     modShift.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('shift'); });
-    modSym.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('sym'); });
+    
+    modSym.addEventListener('touchstart', (e) => { 
+        e.preventDefault(); 
+        e.stopPropagation(); 
+        
+        console.log('SYM Clicked. State:', JSON.stringify(modifiers));
+
+        // Smart Toggle: If keyboard is open, close everything. If closed, open sym.
+        const isKeyboardVisible = modifiers.ctrl || modifiers.alt || modifiers.shift || modifiers.sym;
+        
+        if (isKeyboardVisible) {
+            modifiers.ctrl = false;
+            modifiers.alt = false;
+            modifiers.shift = false;
+            modifiers.sym = false;
+        } else {
+            modifiers.sym = true;
+        }
+        updateState();
+    });
 
     softKeyboard.addEventListener('touchstart', (e) => {
         e.preventDefault();
