@@ -361,6 +361,30 @@ export class TerminalSession {
         }
     }
 
+    _buildAiContext(history) {
+        let pendingShellHistory = '';
+        const conversationHistory = [];
+
+        for (const entry of history) {
+            if (entry.command === 'ai' && entry.exitCode === 0 && entry.output) {
+                // Case A: Successful AI Interaction -> Flush pending history into this turn
+                const userContent = (pendingShellHistory ? pendingShellHistory.trim() + '\n\n' : '') + entry.input;
+                
+                conversationHistory.push({ role: 'user', content: userContent });
+                conversationHistory.push({ role: 'assistant', content: entry.output });
+                
+                pendingShellHistory = ''; // Reset buffer
+            } else {
+                // Case B: Shell Command or Failed AI -> Accumulate history
+                const output = entry.output ? entry.output : 'null';
+                const record = `Input: ${entry.input}\nCommand: ${entry.command}\nOutput: ${output}\nExit Code: ${entry.exitCode}\nDuration: ${entry.duration}ms\nTime: ${entry.completedAt}\n`;
+                pendingShellHistory += record + '\n';
+            }
+        }
+        
+        return { conversationHistory, pendingShellHistory };
+    }
+
     async _handleAiCommand(prompt) {
         // Prevent duplicate logging from shell integration
         this.skipNextShellLog = true;
@@ -369,19 +393,26 @@ export class TerminalSession {
         this._writeToLogAndBroadcast('\r\x1b[K\x1b[36m');
         
         // Gather Context (Current Session Only)
-        const contextLog = [];
+        let cleanHistory = [];
         if (this.executions && this.executions.length > 0) {
-            contextLog.push({
-                sessionId: this.id,
-                title: this.title,
-                cwd: this.cwd,
-                history: this.executions
+            cleanHistory = this.executions.filter(entry => {
+                if (entry.command && IGNORED_COMMANDS.some(ignored => entry.command.includes(ignored))) return false;
+                return true;
             });
         }
-        console.log('[AI Context]', JSON.stringify(contextLog, null, 2));
+        
+        // Build Context
+        const { conversationHistory, pendingShellHistory } = this._buildAiContext(cleanHistory);
+        
+        // Construct Current Prompt
+        const currentContext = `Environment:\n${this.env}\nCurrent Path: ${this.cwd}\n\nRecent Shell History:\n${pendingShellHistory}`;
+        const finalPrompt = `${currentContext}\nQuestion: ${prompt}`;
+        
+        console.log('[AI Context Build]');
+        console.log('History:', JSON.stringify(conversationHistory, null, 2));
+        console.log('Current Prompt Preview:', JSON.stringify(finalPrompt, null, 2));
         
         const startTime = new Date();
-        let fullResponse = '';
 
         try {
             const streamCallback = (chunk) => {
