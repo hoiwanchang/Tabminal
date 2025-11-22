@@ -1992,10 +1992,11 @@ if (virtualKeys) {
 const modCtrl = document.getElementById('mod-ctrl');
 const modAlt = document.getElementById('mod-alt');
 const modShift = document.getElementById('mod-shift');
+const modSym = document.getElementById('mod-sym');
 const softKeyboard = document.getElementById('soft-keyboard');
 
-if (modCtrl && modAlt && modShift && softKeyboard) {
-    const modifiers = { ctrl: false, alt: false, shift: false };
+if (modCtrl && modAlt && modShift && modSym && softKeyboard) {
+    const modifiers = { ctrl: false, alt: false, shift: false, sym: false };
     
     // Basic HHKB-like layout (12 keys max)
     const rows = [
@@ -2015,11 +2016,6 @@ if (modCtrl && modAlt && modShift && softKeyboard) {
         `<div class="row">
             ${row.map(char => {
                 const shiftChar = getShiftChar(char);
-                // Only show shift char if it's different (e.g. not for numbers if we don't want, but standard keyboard does show symbols)
-                // HHKB shows symbols for numbers.
-                // For letters, shift is uppercase. Do we show 'A' on 'a' key?
-                // Usually no, just 'A'. But your request: "put shift char in bottom right".
-                // Let's show it.
                 const shiftLabel = shiftChar ? `<span class="key-shift">${shiftChar}</span>` : '';
                 return `<div class="soft-key" data-char="${char}">
                     <span class="key-main">${char}</span>
@@ -2033,10 +2029,11 @@ if (modCtrl && modAlt && modShift && softKeyboard) {
         modCtrl.classList.toggle('active', modifiers.ctrl);
         modAlt.classList.toggle('active', modifiers.alt);
         modShift.classList.toggle('active', modifiers.shift);
+        modSym.classList.toggle('active', modifiers.sym);
         
         softKeyboard.classList.toggle('shift-mode', modifiers.shift);
         
-        const anyActive = modifiers.ctrl || modifiers.alt || modifiers.shift;
+        const anyActive = modifiers.ctrl || modifiers.alt || modifiers.shift || modifiers.sym;
         softKeyboard.style.display = anyActive ? 'flex' : 'none';
     };
 
@@ -2048,6 +2045,7 @@ if (modCtrl && modAlt && modShift && softKeyboard) {
     modCtrl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('ctrl'); });
     modAlt.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('alt'); });
     modShift.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('shift'); });
+    modSym.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('sym'); });
 
     softKeyboard.addEventListener('touchstart', (e) => {
         e.preventDefault();
