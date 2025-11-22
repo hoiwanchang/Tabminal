@@ -2011,6 +2011,7 @@ if (ctrlBtn && ctrlKeyboard) {
     };
 
     let activeChar = null;
+    let currentActiveKeyEl = null;
 
     const handleMove = (e) => {
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -2018,7 +2019,12 @@ if (ctrlBtn && ctrlKeyboard) {
         const el = document.elementFromPoint(clientX, clientY);
         const keyEl = el?.closest('.ctrl-key');
         
-        document.querySelectorAll('.ctrl-key.active').forEach(k => k.classList.remove('active'));
+        if (keyEl === currentActiveKeyEl) return; // Optimization: No change
+
+        if (currentActiveKeyEl) {
+            currentActiveKeyEl.classList.remove('active');
+        }
+
         if (keyEl) {
             keyEl.classList.add('active');
             activeChar = keyEl.dataset.char;
@@ -2026,6 +2032,7 @@ if (ctrlBtn && ctrlKeyboard) {
         } else {
             activeChar = null;
         }
+        currentActiveKeyEl = keyEl;
     };
 
     const startDrag = (e) => {
@@ -2033,6 +2040,7 @@ if (ctrlBtn && ctrlKeyboard) {
         e.stopPropagation();
         showKeyboard();
         activeChar = null;
+        currentActiveKeyEl = null;
         
         const isTouch = e.type === 'touchstart';
         const moveEvent = isTouch ? 'touchmove' : 'mousemove';
