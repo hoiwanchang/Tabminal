@@ -2126,10 +2126,8 @@ if (modCtrl && modAlt && modShift && modSym && softKeyboard) {
             modifiers.alt = false;
             modifiers.shift = false;
             modifiers.sym = false;
-        } else if (modifiers.shift) {
-            // Shift Mode: Release shift (Sticky), but keyboard stays if SYM is on
-            modifiers.shift = false;
         }
+        // Shift stays active until toggled off (Continuous input)
         
         updateState();
     });
