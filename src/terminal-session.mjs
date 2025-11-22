@@ -3,6 +3,7 @@ import { promisify } from 'node:util';
 import process from 'node:process';
 import AnsiParser from 'node-ansiparser';
 import { alan } from 'utilitas';
+import { config } from './config.mjs';
 
 const execAsync = promisify(exec);
 const WS_STATE_OPEN = 1;
@@ -908,7 +909,9 @@ export class TerminalSession {
             duration: duration ?? null,
         };
 
-        console.log('[Terminal Execution]', record);
+        if (config.debug) {
+            console.log('[Terminal Execution]', record);
+        }
 
         this.executions.push(record);
         if (this.executions.length > 100) {

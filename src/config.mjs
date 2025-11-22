@@ -11,7 +11,8 @@ const DEFAULT_CONFIG = {
     historyLimit: 524288,
     acceptTerms: false,
     password: null,
-    model: 'gemini-2.5-flash-preview-09-2025'
+    model: 'gemini-2.5-flash-preview-09-2025',
+    debug: false
 };
 
 function loadJson(filePath) {
@@ -76,6 +77,10 @@ function loadConfig() {
                 type: 'string',
                 short: 'm'
             },
+            debug: {
+                type: 'boolean',
+                short: 'd'
+            },
             help: {
                 type: 'boolean'
             },
@@ -134,6 +139,9 @@ Options:
     if (args.model) {
         finalConfig.model = args.model;
     }
+    if (args.debug) {
+        finalConfig.debug = true;
+    }
 
     // Environment variables override (for backward compatibility/container usage)
     if (process.env.HOST) finalConfig.host = process.env.HOST;
@@ -143,6 +151,7 @@ Options:
     if (process.env.TABMINAL_PASSWORD) finalConfig.password = process.env.TABMINAL_PASSWORD;
     if (process.env.TABMINAL_AI_KEY) finalConfig.aiKey = process.env.TABMINAL_AI_KEY;
     if (process.env.TABMINAL_MODEL) finalConfig.model = process.env.TABMINAL_MODEL;
+    if (process.env.TABMINAL_DEBUG) finalConfig.debug = true;
 
     // Password Logic
     if (!finalConfig.password) {
