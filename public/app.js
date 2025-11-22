@@ -1983,96 +1983,94 @@ if (virtualKeys) {
     window.addEventListener('mouseup', stopRepeat);
 }
 
-// Ctrl Drag Logic
-const ctrlBtn = document.getElementById('ctrl-btn');
-const ctrlKeyboard = document.getElementById('ctrl-keyboard');
+// Soft Keyboard Logic
+const modCtrl = document.getElementById('mod-ctrl');
+const modAlt = document.getElementById('mod-alt');
+const modShift = document.getElementById('mod-shift');
+const softKeyboard = document.getElementById('soft-keyboard');
 
-if (ctrlBtn && ctrlKeyboard) {
-    const rows = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
-    ctrlKeyboard.innerHTML = rows.map(row => 
+if (modCtrl && modAlt && modShift && softKeyboard) {
+    const modifiers = { ctrl: false, alt: false, shift: false };
+    
+    // Basic HHKB-like layout (12 keys max)
+    const rows = [
+        ['1','2','3','4','5','6','7','8','9','0','-','='],
+        ['q','w','e','r','t','y','u','i','o','p','[',']'],
+        ['a','s','d','f','g','h','j','k','l',';','\''],
+        ['z','x','c','v','b','n','m',',','.','/']
+    ];
+    
+    softKeyboard.innerHTML = rows.map(row => 
         `<div class="row">
-            ${row.split('').map(char => `<div class="ctrl-key" data-char="${char}">${char}</div>`).join('')}
+            ${row.map(char => `<div class="soft-key" data-char="${char}">${char}</div>`).join('')}
         </div>`
     ).join('');
 
-    const showKeyboard = () => {
-        ctrlKeyboard.style.display = 'flex';
-        ctrlKeyboard.style.opacity = '0';
-        ctrlKeyboard.style.transform = 'scaleY(0.5)';
-        requestAnimationFrame(() => {
-            ctrlKeyboard.style.opacity = '1';
-            ctrlKeyboard.style.transform = 'scaleY(1)';
-        });
-    };
-
-    const hideKeyboard = () => {
-        ctrlKeyboard.style.display = 'none';
-        document.querySelectorAll('.ctrl-key.active').forEach(el => el.classList.remove('active'));
-    };
-
-    let activeChar = null;
-    let currentActiveKeyEl = null;
-
-    const handleMove = (e) => {
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const el = document.elementFromPoint(clientX, clientY);
-        const keyEl = el?.closest('.ctrl-key');
+    const updateState = () => {
+        modCtrl.classList.toggle('active', modifiers.ctrl);
+        modAlt.classList.toggle('active', modifiers.alt);
+        modShift.classList.toggle('active', modifiers.shift);
         
-        if (keyEl === currentActiveKeyEl) return; // Optimization: No change
-
-        if (currentActiveKeyEl) {
-            currentActiveKeyEl.classList.remove('active');
-        }
-
-        if (keyEl) {
-            keyEl.classList.add('active');
-            activeChar = keyEl.dataset.char;
-            if (navigator.vibrate) navigator.vibrate(5);
-        } else {
-            activeChar = null;
-        }
-        currentActiveKeyEl = keyEl;
+        const anyActive = modifiers.ctrl || modifiers.alt || modifiers.shift;
+        softKeyboard.style.display = anyActive ? 'flex' : 'none';
     };
 
-    const startDrag = (e) => {
-        e.preventDefault(); 
+    const toggleMod = (name) => {
+        modifiers[name] = !modifiers[name];
+        updateState();
+    };
+
+    modCtrl.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('ctrl'); });
+    modAlt.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('alt'); });
+    modShift.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); toggleMod('shift'); });
+
+    softKeyboard.addEventListener('touchstart', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-        showKeyboard();
-        activeChar = null;
-        currentActiveKeyEl = null;
+        const keyEl = e.target.closest('.soft-key');
+        if (!keyEl) return;
         
-        const isTouch = e.type === 'touchstart';
-        const moveEvent = isTouch ? 'touchmove' : 'mousemove';
-        const endEvent = isTouch ? 'touchend' : 'mouseup';
+        keyEl.classList.add('active');
+        setTimeout(() => keyEl.classList.remove('active'), 100);
         
-        const onMove = (ev) => {
-            ev.preventDefault();
-            handleMove(ev);
-        };
+        if (navigator.vibrate) navigator.vibrate(10);
         
-        const onEnd = (ev) => {
-            window.removeEventListener(moveEvent, onMove);
-            window.removeEventListener(endEvent, onEnd);
-            hideKeyboard();
-            
-            if (activeChar && state.activeSessionId) {
-                const code = activeChar.charCodeAt(0) - 64;
-                const data = String.fromCharCode(code);
-                const session = state.sessions.get(state.activeSessionId);
-                if (session) {
-                    session.send({ type: 'input', data });
-                    if (navigator.vibrate) navigator.vibrate(20);
-                }
+        let char = keyEl.dataset.char;
+        
+        // Apply Modifiers Logic
+        let data = char;
+        
+        if (modifiers.ctrl) {
+            // Ctrl Logic
+            if (data.length === 1 && /[a-z]/i.test(data)) {
+                data = String.fromCharCode(data.toUpperCase().charCodeAt(0) - 64);
+            } else if (data === '[') data = '\x1b'; // Ctrl+[
+            // ... handle others if needed
+        }
+        
+        if (modifiers.alt) {
+            // Alt Logic (Meta)
+            data = '\x1b' + data;
+        }
+        
+        // Shift Logic (Simple uppercase for now, mapping symbols is complex without a map)
+        if (modifiers.shift) {
+            if (data.length === 1 && /[a-z]/.test(data)) {
+                data = data.toUpperCase();
             }
-        };
-        
-        window.addEventListener(moveEvent, onMove, { passive: false });
-        window.addEventListener(endEvent, onEnd);
-    };
+            // TODO: Handle shift symbols (!@#...) in next version
+        }
 
-    ctrlBtn.addEventListener('touchstart', startDrag, { passive: false });
-    ctrlBtn.addEventListener('mousedown', startDrag);
+        if (state.activeSessionId) {
+            state.sessions.get(state.activeSessionId).send({ type: 'input', data });
+        }
+        
+        // Auto-release Shift?
+        if (modifiers.shift) {
+             modifiers.shift = false;
+             updateState();
+        }
+    });
 }
 
 // Keyboard Shortcuts
