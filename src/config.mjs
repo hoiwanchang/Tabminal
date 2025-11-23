@@ -12,7 +12,9 @@ const DEFAULT_CONFIG = {
     acceptTerms: false,
     password: null,
     model: 'gemini-2.5-flash-preview-09-2025',
-    debug: false
+    debug: false,
+    googleApiKey: null,
+    googleCx: null
 };
 
 function loadJson(filePath) {
@@ -81,6 +83,14 @@ function loadConfig() {
                 type: 'boolean',
                 short: 'd'
             },
+            googlekey: {
+                type: 'string',
+                short: 'g'
+            },
+            googlecx: {
+                type: 'string',
+                short: 'c'
+            },
             help: {
                 type: 'boolean'
             },
@@ -142,6 +152,12 @@ Options:
     if (args.debug) {
         finalConfig.debug = true;
     }
+    if (args.googlekey) {
+        finalConfig.googleApiKey = args.googlekey;
+    }
+    if (args.googlecx) {
+        finalConfig.googleCx = args.googlecx;
+    }
 
     // Environment variables override (for backward compatibility/container usage)
     if (process.env.HOST) finalConfig.host = process.env.HOST;
@@ -152,6 +168,8 @@ Options:
     if (process.env.TABMINAL_AI_KEY) finalConfig.aiKey = process.env.TABMINAL_AI_KEY;
     if (process.env.TABMINAL_MODEL) finalConfig.model = process.env.TABMINAL_MODEL;
     if (process.env.TABMINAL_DEBUG) finalConfig.debug = true;
+    if (process.env.TABMINAL_GOOGLE_KEY) finalConfig.googleApiKey = process.env.TABMINAL_GOOGLE_KEY;
+    if (process.env.TABMINAL_GOOGLE_CX) finalConfig.googleCx = process.env.TABMINAL_GOOGLE_CX;
 
     // Password Logic
     if (!finalConfig.password) {

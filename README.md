@@ -66,6 +66,8 @@ You can configure Tabminal via command-line arguments or environment variables.
 | `-a`, `--passwd` | `TABMINAL_PASSWORD` | Access password | (Randomly Generated) |
 | `-k`, `--aikey` | `TABMINAL_AI_KEY` | AI Provider API Key | `null` |
 | `-m`, `--model` | `TABMINAL_MODEL` | AI Model ID | `gemini-2.5-flash-preview-09-2025` |
+| `-g`, `--googlekey` | `TABMINAL_GOOGLE_KEY` | Google Search API Key | `null` |
+| `-c`, `--googlecx` | `TABMINAL_GOOGLE_CX` | Google Search Engine ID (CX) | `null` |
 | `-d`, `--debug` | `TABMINAL_DEBUG` | Enable debug logs | `false` |
 | `-y`, `--yes` | `TABMINAL_ACCEPT` | Accept security terms | `false` |
 

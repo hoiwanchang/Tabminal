@@ -18,7 +18,7 @@ import { config } from './config.mjs';
 import { authMiddleware, verifyClient } from './auth.mjs';
 import { setupFsRoutes } from './fs-routes.mjs';
 import * as persistence from './persistence.mjs';
-import { alan } from 'utilitas';
+import { alan, web } from 'utilitas';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,6 +29,15 @@ const router = new Router();
 
 if (config.aiKey) {
     try {
+        if (config.googleApiKey && config.googleCx) {
+            await web.initSearch({
+                provider: 'google',
+                apiKey: config.googleApiKey,
+                cx: config.googleCx
+            });
+            console.log('[Server] Web Search initialized (Google)');
+        }
+
         await alan.init({
             apiKey: config.aiKey,
             model: config.model
