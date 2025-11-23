@@ -67,11 +67,11 @@ function loadConfig() {
                 type: 'string', // Parse as string first to handle potential non-numeric input safely
                 short: 'p'
             },
-            passwd: {
+            password: {
                 type: 'string',
                 short: 'a'
             },
-            aikey: {
+            'openrouter-key': {
                 type: 'string',
                 short: 'k'
             },
@@ -83,18 +83,18 @@ function loadConfig() {
                 type: 'boolean',
                 short: 'd'
             },
-            googlekey: {
+            'google-key': {
                 type: 'string',
                 short: 'g'
             },
-            googlecx: {
+            'google-cx': {
                 type: 'string',
                 short: 'c'
             },
             help: {
                 type: 'boolean'
             },
-            yes: {
+            'accept-terms': {
                 type: 'boolean',
                 short: 'y'
             }
@@ -110,13 +110,16 @@ Usage:
   node src/server.mjs [options]
 
 Options:
-  --host, -h      Host to bind to (default: 127.0.0.1)
-  --port, -p      Port to listen on (default: 9846)
-  --passwd, -a    Set access password
-  --aikey, -k     Set AI API Key
-  --model, -m     Set AI Model
-  --yes, -y       Accept security warning and start server
-  --help          Show this help message
+  --host, -h            Host to bind to (default: 127.0.0.1)
+  --port, -p            Port to listen on (default: 9846)
+  --password, -a        Set access password
+  --openrouter-key, -k  Set OpenRouter API Key
+  --model, -m           Set AI Model
+  --google-key, -g      Set Google Search API Key
+  --google-cx, -c       Set Google Search Engine ID
+  --debug, -d           Enable debug mode
+  --accept-terms, -y    Accept security warning and start server
+  --help                Show this help message
         `);
         process.exit(0);
     }
@@ -137,14 +140,14 @@ Options:
             finalConfig.port = parsedPort;
         }
     }
-    if (args.yes) {
+    if (args['accept-terms']) {
         finalConfig.acceptTerms = true;
     }
-    if (args.passwd) {
-        finalConfig.password = args.passwd;
+    if (args.password) {
+        finalConfig.password = args.password;
     }
-    if (args.aikey) {
-        finalConfig.aiKey = args.aikey;
+    if (args['openrouter-key']) {
+        finalConfig.aiKey = args['openrouter-key'];
     }
     if (args.model) {
         finalConfig.model = args.model;
@@ -152,11 +155,11 @@ Options:
     if (args.debug) {
         finalConfig.debug = true;
     }
-    if (args.googlekey) {
-        finalConfig.googleApiKey = args.googlekey;
+    if (args['google-key']) {
+        finalConfig.googleApiKey = args['google-key'];
     }
-    if (args.googlecx) {
-        finalConfig.googleCx = args.googlecx;
+    if (args['google-cx']) {
+        finalConfig.googleCx = args['google-cx'];
     }
 
     // Environment variables override (for backward compatibility/container usage)
@@ -165,7 +168,7 @@ Options:
     if (process.env.TABMINAL_HEARTBEAT) finalConfig.heartbeatInterval = parseInt(process.env.TABMINAL_HEARTBEAT, 10);
     if (process.env.TABMINAL_HISTORY) finalConfig.historyLimit = parseInt(process.env.TABMINAL_HISTORY, 10);
     if (process.env.TABMINAL_PASSWORD) finalConfig.password = process.env.TABMINAL_PASSWORD;
-    if (process.env.TABMINAL_AI_KEY) finalConfig.aiKey = process.env.TABMINAL_AI_KEY;
+    if (process.env.TABMINAL_OPENROUTER_KEY) finalConfig.aiKey = process.env.TABMINAL_OPENROUTER_KEY;
     if (process.env.TABMINAL_MODEL) finalConfig.model = process.env.TABMINAL_MODEL;
     if (process.env.TABMINAL_DEBUG) finalConfig.debug = true;
     if (process.env.TABMINAL_GOOGLE_KEY) finalConfig.googleApiKey = process.env.TABMINAL_GOOGLE_KEY;

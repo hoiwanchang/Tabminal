@@ -38,7 +38,7 @@ Optimized specifically for **iPadOS** and **iOS**, solving the pain points of co
 ### Quick Start (No Install)
 Run directly with npx:
 ```bash
-npx tabminal --aikey "YOUR_API_KEY" --yes
+npx tabminal --openrouter-key "YOUR_API_KEY" --accept-terms
 ```
 
 ### Installation
@@ -52,7 +52,7 @@ cd tabminal
 npm install
 
 # Start the server
-npm start -- --aikey "YOUR_API_KEY" --yes
+npm start -- --openrouter-key "YOUR_API_KEY" --accept-terms
 ```
 
 ### Configuration
@@ -63,13 +63,13 @@ You can configure Tabminal via command-line arguments or environment variables.
 | :--- | :--- | :--- | :--- |
 | `-p`, `--port` | `PORT` | Server port | `9846` |
 | `-h`, `--host` | `HOST` | Bind address | `127.0.0.1` |
-| `-a`, `--passwd` | `TABMINAL_PASSWORD` | Access password | (Randomly Generated) |
-| `-k`, `--aikey` | `TABMINAL_AI_KEY` | AI Provider API Key | `null` |
+| `-a`, `--password` | `TABMINAL_PASSWORD` | Access password | (Randomly Generated) |
+| `-k`, `--openrouter-key` | `TABMINAL_OPENROUTER_KEY` | OpenRouter API Key | `null` |
 | `-m`, `--model` | `TABMINAL_MODEL` | AI Model ID | `gemini-2.5-flash-preview-09-2025` |
-| `-g`, `--googlekey` | `TABMINAL_GOOGLE_KEY` | Google Search API Key | `null` |
-| `-c`, `--googlecx` | `TABMINAL_GOOGLE_CX` | Google Search Engine ID (CX) | `null` |
+| `-g`, `--google-key` | `TABMINAL_GOOGLE_KEY` | Google Search API Key | `null` |
+| `-c`, `--google-cx` | `TABMINAL_GOOGLE_CX` | Google Search Engine ID (CX) | `null` |
 | `-d`, `--debug` | `TABMINAL_DEBUG` | Enable debug logs | `false` |
-| `-y`, `--yes` | `TABMINAL_ACCEPT` | Accept security terms | `false` |
+| `-y`, `--accept-terms` | `TABMINAL_ACCEPT` | Accept security terms | `false` |
 
 ## ⌨️ Shortcuts
 
