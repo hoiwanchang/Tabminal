@@ -101,4 +101,4 @@ You can configure Tabminal via command-line arguments, environment variables, or
 *   **AI**: Integration via `utilitas`.
 
 ## 📄 License
-MIT
+[MIT](LICENSE)
