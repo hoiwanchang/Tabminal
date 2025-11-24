@@ -2,6 +2,7 @@ import { Terminal } from 'https://cdn.jsdelivr.net/npm/xterm@5.3.0/+esm';
 import { FitAddon } from 'https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/+esm';
 import { WebLinksAddon } from 'https://cdn.jsdelivr.net/npm/xterm-addon-web-links@0.9.0/+esm';
 import { CanvasAddon } from 'https://cdn.jsdelivr.net/npm/xterm-addon-canvas@0.5.0/+esm';
+import { SearchAddon } from 'https://cdn.jsdelivr.net/npm/xterm-addon-search@0.13.0/+esm';
 
 // Detect Mobile/Tablet (focus on touch capability for font sizing)
 // Logic: If the device supports touch, we assume it needs larger fonts (14px)
@@ -723,15 +724,17 @@ class Session {
             convertEol: true,
             cursorBlink: true,
             fontFamily: "'Monaspace Neon', \"SF Mono Terminal\", \"SFMono-Regular\", \"SF Mono\", \"JetBrains Mono\", Menlo, Consolas, monospace",
-            fontSize: IS_MOBILE ? 14 : 12,
+            fontSize: window.innerWidth < 768 ? 14 : 12,
             rows: this.rows,
             cols: this.cols,
             theme: { background: '#002b36', foreground: '#839496', cursor: '#93a1a1', cursorAccent: '#002b36', selectionBackground: '#073642' }
         });
         this.mainFitAddon = new FitAddon();
         this.mainLinksAddon = new WebLinksAddon();
+        this.searchAddon = new SearchAddon();
         this.mainTerm.loadAddon(this.mainFitAddon);
         this.mainTerm.loadAddon(this.mainLinksAddon);
+        this.mainTerm.loadAddon(this.searchAddon);
         this.mainTerm.loadAddon(new CanvasAddon());
 
         // Event Listeners
@@ -2131,25 +2134,64 @@ if (modCtrl && modAlt && modShift && modSym && softKeyboard) {
     });
 }
 
+// Search Bar Logic
+const searchBar = document.getElementById('search-bar');
+const searchInput = document.getElementById('search-input');
+const searchNext = document.getElementById('search-next');
+const searchPrev = document.getElementById('search-prev');
+const searchClose = document.getElementById('search-close');
+
+if (searchBar) {
+    const doSearch = (forward = true) => {
+        if (!state.activeSessionId || !state.sessions.has(state.activeSessionId)) return;
+        const addon = state.sessions.get(state.activeSessionId).searchAddon;
+        const term = searchInput.value;
+        if (forward) addon.findNext(term);
+        else addon.findPrevious(term);
+    };
+
+    searchInput.addEventListener('input', (e) => {
+        if (!state.activeSessionId) return;
+        state.sessions.get(state.activeSessionId).searchAddon.findNext(e.target.value, { incremental: true });
+    });
+    
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            doSearch(!e.shiftKey);
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            searchBar.style.display = 'none';
+            state.sessions.get(state.activeSessionId)?.mainTerm.focus();
+        }
+    });
+
+    searchNext.addEventListener('click', () => doSearch(true));
+    searchPrev.addEventListener('click', () => doSearch(false));
+    
+    searchClose.addEventListener('click', () => {
+        searchBar.style.display = 'none';
+        state.sessions.get(state.activeSessionId)?.mainTerm.focus();
+    });
+}
+
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
-    const key = e.key.toLowerCase();
-    
-    // ESC: Close Help Modal
-    if (key === 'escape') {
-        const modal = document.getElementById('shortcuts-modal');
-        if (modal && modal.style.display === 'flex') {
-            e.preventDefault();
-            modal.style.display = 'none';
-            if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
-                state.sessions.get(state.activeSessionId).mainTerm.focus();
-            }
-            return;
+    // Ctrl+F or Cmd+F for Search
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        if (searchBar) {
+            searchBar.style.display = 'flex';
+            searchInput.focus();
+            searchInput.select();
         }
+        return;
     }
 
-    if (!e.ctrlKey) return; // Ctrl is mandatory for others
+    if (!e.ctrlKey) return; // Ctrl is mandatory
 
+    const key = e.key.toLowerCase();
     const code = e.code;
     
     // Ctrl + Shift Context
@@ -2185,14 +2227,12 @@ document.addEventListener('keydown', (e) => {
             const modal = document.getElementById('shortcuts-modal');
             if (modal) {
                 modal.style.display = 'flex';
-                // Steal focus from terminal
                 const closeBtn = modal.querySelector('button');
                 if (closeBtn) closeBtn.focus();
                 
                 modal.onclick = (ev) => {
                     if (ev.target === modal) {
                         modal.style.display = 'none';
-                        // Restore focus
                         if (state.activeSessionId && state.sessions.has(state.activeSessionId)) {
                             state.sessions.get(state.activeSessionId).mainTerm.focus();
                         }
@@ -2239,6 +2279,7 @@ document.addEventListener('keydown', (e) => {
         }
     }
 }, true); // Use capture phase to override editor/terminal
+
 
 // Start the app
 initApp();
