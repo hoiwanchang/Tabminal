@@ -48,12 +48,12 @@
     font-size: 13px;
     height: 23px; /* Exact VS Code input height */
     width: 240px;
-    padding: 0 6px;
+    padding: 3px 6px 0 6px; /* Increase top padding */
     padding-right: 70px;
     outline: none;
     border-radius: 2px;
     box-sizing: border-box;
-    line-height: 21px; /* Fix vertical alignment (height - borders) */
+    line-height: normal; /* Reset line-height */
 }
 
 .search-bar input:focus {
@@ -138,6 +138,7 @@
     height: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
+    padding-top: 2px; /* Visual center tweak */
 }
 
 :root {
