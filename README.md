@@ -89,7 +89,6 @@ You can configure Tabminal via command-line arguments, environment variables, or
 *   **`Ctrl` / `Cmd` + `F`**: Find in Terminal
 
 ### Touch Actions
-*   **Virtual `^C`**: Send SIGINT.
 *   **Virtual `SYM`**: Toggle HHKB keyboard overlay.
 
 ## 🛠 Tech Stack
