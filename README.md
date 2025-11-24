@@ -10,7 +10,8 @@
 Tabminal bridges the gap between traditional CLI tools and modern AI capabilities, all while solving the UX challenges of coding on mobile devices.
 
 ### 🧠 AI-Native Intelligence
-Powered by **Gemini 2.5 Flash**, Tabminal understands your context.
+Powered by **modern AI models** (via OpenRouter), Tabminal understands your context.
+*(Defaults to **Gemini 2.5 Flash** for optimal speed/cost balance if not configured)*
 *   **Context-Aware Chat**: Type `# how do I...` to ask questions. The AI knows your **CWD**, **Environment**, and **Recent History**.
 *   **Auto-Fix**: Command failed? Tabminal automatically analyzes the exit code and error output to suggest fixes. No copy-pasting required.
 *   **Web Search**: Enable Google Search integration to let the AI fetch real-time answers from the web.
@@ -74,7 +75,7 @@ You can configure Tabminal via command-line arguments, environment variables, or
 | `-g`, `--google-key` | `TABMINAL_GOOGLE_KEY` | Google Search API Key | `null` |
 | `-c`, `--google-cx` | `TABMINAL_GOOGLE_CX` | Google Search Engine ID (CX) | `null` |
 | `-d`, `--debug` | `TABMINAL_DEBUG` | Enable debug logs | `false` |
-| `-y`, `--accept-terms` | `TABMINAL_ACCEPT` | Accept security terms | `false` |
+| `-y`, `--accept-terms` | `TABMINAL_ACCEPT` | **Required**: Accept security risks (Full FS Access) | `false` |
 
 ## ⌨️ Shortcuts & Gestures
 
