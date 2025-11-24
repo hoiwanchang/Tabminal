@@ -20,7 +20,7 @@
 /* Terminal Search Bar (VS Code Style) - Moved to Top */
 .search-bar {
     position: absolute;
-    top: 0;
+    top: -10px;
     right: 20px;
     z-index: 100;
     display: flex;
@@ -858,7 +858,7 @@ kbd {
     min-height: 0;
     width: 100%;
     min-width: 0; /* Prevent overflow */
-    overflow: hidden; /* Force content to clip so fitAddon can shrink it */
+    overflow: visible; /* Allow search bar to protrude */
     padding: 10px 0 10px 10px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
     z-index: 5; /* Lower than editor */
