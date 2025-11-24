@@ -11,7 +11,7 @@ Tabminal bridges the gap between traditional CLI tools and modern AI capabilitie
 
 ### 🧠 AI-Native Intelligence
 Powered by **modern AI models** (via OpenRouter), Tabminal understands your context.
-*(Defaults to **Gemini 2.5 Flash** for optimal speed/cost balance if not configured)*
+*(Defaults to **Gemini 2.5 Flash** for optimal speed/performance balance if not configured)*
 *   **Context-Aware Chat**: Type `# how do I...` to ask questions. The AI knows your **CWD**, **Environment**, and **Recent History**.
 *   **Auto-Fix**: Command failed? Tabminal automatically analyzes the exit code and error output to suggest fixes. No copy-pasting required.
 *   **Web Search**: Enable Google Search integration to let the AI fetch real-time answers from the web.
