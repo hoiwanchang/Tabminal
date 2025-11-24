@@ -79,25 +79,22 @@ You can configure Tabminal via command-line arguments, environment variables, or
 
 ## ⌨️ Shortcuts & Gestures
 
-### Global
-*   **`Ctrl/Cmd + F`**: Find in Terminal (VS Code style)
-*   **`Ctrl + Shift + ?`**: Show Shortcuts Help
-
-### Desktop / Physical Keyboard
-*   **`Ctrl + Shift + T`**: New Tab
-*   **`Ctrl + Shift + W`**: Close Tab
-*   **`Ctrl + Shift + [` / `]`**: Switch Tab
+*   **`Ctrl + Shift + T`**: New Terminal
+*   **`Ctrl + Shift + W`**: Close Terminal
 *   **`Ctrl + Shift + E`**: Toggle Editor Pane
-*   **`Ctrl + Up` / `Down`**: Switch Focus between Editor and Terminal
+*   **`Ctrl + Up` / `Down`**: Focus Editor / Terminal
+*   **`Ctrl + Shift + [` / `]`**: Switch Terminal
 *   **`Ctrl + Alt + [` / `]`**: Switch Open File in Editor
+*   **`Ctrl + Shift + ?`**: Show Shortcuts Help
+*   **`Ctrl` / `Cmd` + `F`**: Find in Terminal
 
-### Mobile Touch
+### Touch Actions
 *   **Virtual `^C`**: Send SIGINT.
-*   **Virtual `SYM`**: Toggle full keyboard overlay.
+*   **Virtual `SYM`**: Toggle HHKB keyboard overlay.
 
 ## 🛠 Tech Stack
 *   **Backend**: [Node.js](https://nodejs.org), [Koa](https://github.com/koajs/koa), [node-pty](https://github.com/microsoft/node-pty), [WebSocket](https://github.com/websockets/ws).
-*   **Frontend**: Vanilla JS, [xterm.js](https://github.com/xtermjs/xterm.js), [Monaco Editor](https://github.com/microsoft/monaco-editor).
+*   **Frontend**: [Vanilla JS](http://vanilla-js.com/) 😝, [xterm.js](https://github.com/xtermjs/xterm.js), [Monaco Editor](https://github.com/microsoft/monaco-editor).
 *   **AI**: Integration via [utilitas](https://github.com/leask/utilitas).
 
 ## 📄 License
