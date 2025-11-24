@@ -1,42 +1,43 @@
 # Tabminal
 
-> **A modern, AI-native web terminal built for the cloud age.**
-> Seamlessly accessible from Desktop, iPad, and iPhone with a native-like experience.
+> **The AI-Native Terminal for the Mobile Age.**
+> Seamlessly code from your Desktop, iPad, or iPhone with an intelligent, persistent, and touch-optimized experience.
 
-![Tabminal Banner](public/favicon.svg) 
+![Tabminal Banner](public/favicon.svg)
 
-## ✨ Key Features
+## 🌟 Why Tabminal?
 
-### 🧠 AI-Native Integration
-Tabminal isn't just a terminal; it's an intelligent workspace paired with **Gemini 2.5 Flash**.
-*   **Context-Aware**: The AI knows your **Current Working Directory**, **Environment Variables**, and **Recent Command History**. No need to copy-paste context.
-*   **Command Hijack (`#`)**: Simply type `#` followed by your question (e.g., `# how to tar a folder`) to chat with the AI. The output streams in real-time with syntax highlighting.
-*   **Auto-Fix**: If a shell command fails (non-zero exit code), Tabminal automatically analyzes the error log and suggests a fix.
-*   **Audit Logging**: All AI interactions are logged and persisted for future context.
+Tabminal bridges the gap between traditional CLI tools and modern AI capabilities, all while solving the UX challenges of coding on mobile devices.
+
+### 🧠 AI-Native Intelligence
+Powered by **Gemini 2.5 Flash**, Tabminal understands your context.
+*   **Context-Aware Chat**: Type `# how do I...` to ask questions. The AI knows your **CWD**, **Environment**, and **Recent History**.
+*   **Auto-Fix**: Command failed? Tabminal automatically analyzes the exit code and error output to suggest fixes. No copy-pasting required.
+*   **Web Search**: Enable Google Search integration to let the AI fetch real-time answers from the web.
 
 ### 📱 Ultimate Mobile Experience
-Optimized specifically for **iPadOS** and **iOS**, solving the pain points of coding on touch devices.
-*   **PWA Support**: Installable as a full-screen app. Solves the infamous iOS viewport height issues.
-*   **HHKB-Style Soft Keyboard**: A custom 12-column virtual keyboard bringing the HHKB layout to iPhone.
-    *   **Drag-to-Ctrl**: Touch and drag the `CTRL` key to perform combinations (e.g., drag to 'C' for `Ctrl+C`).
-    *   **Smart Modifiers**: `SHIFT` allows continuous entry; `SYM` toggles the full keyboard overlay.
-    *   **Responsive Layout**: Keyboard height adapts to landscape/portrait modes automatically.
-*   **Optimized UI**: Hamburger menu for sessions on small screens, resource-saving mode (no preview rendering) on iPhone.
+Built from the ground up for **iPadOS** and **iOS**.
+*   **HHKB Virtual Keyboard**: A specialized software keyboard overlay with `CTRL`, `ALT`, `TAB`, and arrow keys.
+    *   **Smart Modifiers**: Toggle `SHIFT` for continuous entry.
+    *   **Drag Gestures**: Slide from `CTRL` to any key to execute combos.
+*   **Responsive Layout**: Auto-adapts to landscape/portrait modes, respecting Safe Areas and Notches.
+*   **PWA Ready**: Install to Home Screen for a full-screen, native app feel.
 
 ### 💻 Powerful Desktop Features
-*   **Persistent Sessions**: Close your browser, come back later, and your terminal state (and running processes) are exactly where you left them.
-*   **Built-in Editor**: Integrated **Monaco Editor** (VS Code core) with split-pane view. Edit files on the server directly.
-*   **Visual File Manager**: Sidebar file tree for easy navigation and opening of files.
-*   **Network Heartbeat**: Real-time latency visualization (capsule style on desktop, bottom-fill on mobile).
+*   **Persistent Sessions**: Your terminal state lives on the server. Refresh or switch devices without losing your work.
+*   **Built-in Editor**: Integrated **Monaco Editor** (VS Code core) allows you to edit files directly on the server.
+*   **Visual File Manager**: Sidebar file tree for easy navigation.
+*   **Network Heartbeat**: Real-time latency visualization.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-*   Node.js >= 16
-*   An AI API Key (e.g., Google AI Studio / OpenRouter)
+*   Node.js >= 18
+*   An API Key (OpenRouter / Google AI Studio)
 
 ### Quick Start (No Install)
-Run directly with npx:
+Run directly with `npx`:
+
 ```bash
 npx tabminal --openrouter-key "YOUR_API_KEY" --accept-terms
 ```
@@ -45,7 +46,7 @@ npx tabminal --openrouter-key "YOUR_API_KEY" --accept-terms
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/tabminal.git
+git clone https://github.com/leask/tabminal.git
 cd tabminal
 
 # Install dependencies
@@ -57,39 +58,42 @@ npm start -- --openrouter-key "YOUR_API_KEY" --accept-terms
 
 ### Configuration
 
-You can configure Tabminal via command-line arguments or environment variables.
+You can configure Tabminal via command-line arguments, environment variables, or a `config.json` file.
 
 | Argument | Env Variable | Description | Default |
 | :--- | :--- | :--- | :--- |
 | `-p`, `--port` | `PORT` | Server port | `9846` |
 | `-h`, `--host` | `HOST` | Bind address | `127.0.0.1` |
 | `-a`, `--password` | `TABMINAL_PASSWORD` | Access password | (Randomly Generated) |
-| `-k`, `--openrouter-key` | `TABMINAL_OPENROUTER_KEY` | OpenRouter API Key | `null` |
+| `-k`, `--openrouter-key` | `TABMINAL_OPENROUTER_KEY` | AI Provider API Key | `null` |
 | `-m`, `--model` | `TABMINAL_MODEL` | AI Model ID | `gemini-2.5-flash-preview-09-2025` |
 | `-g`, `--google-key` | `TABMINAL_GOOGLE_KEY` | Google Search API Key | `null` |
 | `-c`, `--google-cx` | `TABMINAL_GOOGLE_CX` | Google Search Engine ID (CX) | `null` |
 | `-d`, `--debug` | `TABMINAL_DEBUG` | Enable debug logs | `false` |
 | `-y`, `--accept-terms` | `TABMINAL_ACCEPT` | Accept security terms | `false` |
 
-## ⌨️ Shortcuts
+## ⌨️ Shortcuts & Gestures
 
-### Physical Keyboard (Desktop/iPad)
-*   **`Ctrl + Shift + T`**: New Tab (Inherits current CWD)
-*   **`Ctrl + Shift + W`**: Close Current Tab
-*   **`Ctrl + Shift + [` / `]`**: Switch Previous/Next Tab
-*   **`Ctrl + Alt + [` / `]`**: Switch Previous/Next Open File in Editor
-*   **`Ctrl + Shift + E`**: Toggle Editor Pane
-*   **`Ctrl + Up` / `Down`**: Switch Focus between Editor and Terminal
+### Global
+*   **`Ctrl/Cmd + F`**: Find in Terminal (VS Code style)
 *   **`Ctrl + Shift + ?`**: Show Shortcuts Help
 
-### Touch Gestures (Mobile)
-*   **Virtual `^C`**: Send SIGINT (Ctrl+C).
-*   **Virtual `CTRL` (Hold & Drag)**: Visualize a QWERTY overlay to quickly trigger Control combinations without lifting your finger.
-*   **Virtual `SYM`**: Toggle the full HHKB-style soft keyboard.
+### Desktop / Physical Keyboard
+*   **`Ctrl + Shift + T`**: New Tab
+*   **`Ctrl + Shift + W`**: Close Tab
+*   **`Ctrl + Shift + [` / `]`**: Switch Tab
+*   **`Ctrl + Shift + E`**: Toggle Editor Pane
+*   **`Ctrl + Up` / `Down`**: Switch Focus between Editor and Terminal
+*   **`Ctrl + Alt + [` / `]`**: Switch Open File in Editor
+
+### Mobile Touch
+*   **Virtual `^C`**: Send SIGINT.
+*   **Virtual `SYM`**: Toggle full keyboard overlay.
+*   **Long Press `CTRL`**: Drag to simulate key combos.
 
 ## 🛠 Tech Stack
-*   **Backend**: Node.js, Koa, node-pty, WebSocket (ws).
-*   **Frontend**: Vanilla JS (ES Modules), xterm.js, Monaco Editor.
+*   **Backend**: Node.js, Koa, node-pty, WebSocket.
+*   **Frontend**: Vanilla JS, xterm.js, Monaco Editor.
 *   **AI**: Integration via `utilitas`.
 
 ## 📄 License
