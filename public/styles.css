@@ -17,6 +17,112 @@
   font-display: swap;
 }
 
+/* Terminal Search Bar (VS Code Style) - Moved to Top */
+.search-bar {
+    position: absolute;
+    top: 0;
+    right: 20px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    background-color: #252526;
+    padding: 3px;
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    border: 1px solid #454545;
+    border-top: none;
+}
+
+.search-bar .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-right: 4px;
+}
+
+.search-bar input {
+    background-color: #3c3c3c;
+    border: 1px solid #3c3c3c;
+    color: #cccccc;
+    font-family: inherit;
+    font-size: 13px;
+    height: 26px;
+    width: 240px;
+    padding: 0 6px;
+    padding-right: 70px; /* Reserve space for overlay buttons */
+    outline: none;
+    border-radius: 2px;
+    box-sizing: border-box;
+}
+
+.search-bar input:focus {
+    border-color: #007fd4;
+}
+
+/* Overlay Options inside Input */
+.search-bar .search-options {
+    position: absolute;
+    right: 2px;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.search-bar .option-btn {
+    background: transparent;
+    border: none;
+    color: #858585;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    margin: 0 1px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+}
+
+.search-bar .option-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.search-bar .option-btn.active {
+    color: #007fd4;
+    background-color: rgba(0, 127, 212, 0.15);
+}
+
+/* Navigation & Close Buttons */
+.search-bar .nav-btn, .search-bar .close-btn {
+    background: transparent;
+    border: none;
+    color: #cccccc;
+    width: 24px;
+    height: 24px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    padding: 0;
+}
+
+.search-bar .nav-btn:hover, .search-bar .close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.search-bar .search-results {
+    color: #cccccc;
+    font-size: 12px;
+    margin: 0 8px;
+    min-width: 60px;
+    text-align: center;
+    white-space: nowrap;
+}
+
 :root {
     color-scheme: dark;
     --bg-base: #002b36;
@@ -1277,107 +1383,4 @@ kbd {
     /* Adjust internal labels */
     .key-main { top: 0px; left: 4px; font-size: 11px; }
     .key-shift { bottom: 0px; right: 4px; font-size: 8px; }
-}
-/* Terminal Search Bar (VS Code Style) */
-.search-bar {
-    position: absolute;
-    top: 0;
-    right: 20px;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    background-color: #252526;
-    padding: 3px;
-    border-radius: 0 0 3px 3px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-}
-
-.search-input-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin-right: 4px;
-}
-
-.search-bar input {
-    background-color: #3c3c3c;
-    border: 1px solid #3c3c3c;
-    color: #cccccc;
-    font-family: inherit;
-    font-size: 13px;
-    height: 26px;
-    width: 240px;
-    padding: 0 6px;
-    padding-right: 70px; /* Reserve space for overlay buttons */
-    outline: none;
-    border-radius: 2px;
-    box-sizing: border-box;
-}
-
-.search-bar input:focus {
-    border-color: #007fd4;
-}
-
-/* Overlay Options inside Input */
-.search-options {
-    position: absolute;
-    right: 2px;
-    top: 0;
-    height: 100%;
-    display: flex;
-    align-items: center;
-}
-
-.option-btn {
-    background: transparent;
-    border: none;
-    color: #858585;
-    width: 20px;
-    height: 20px;
-    border-radius: 3px;
-    margin: 0 1px;
-    padding: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-}
-
-.option-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.option-btn.active {
-    color: #007fd4;
-    background-color: rgba(0, 127, 212, 0.15);
-}
-
-/* Navigation & Close Buttons */
-.nav-btn, .close-btn {
-    background: transparent;
-    border: none;
-    color: #cccccc;
-    width: 24px;
-    height: 24px;
-    border-radius: 3px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    padding: 0;
-}
-
-.nav-btn:hover, .close-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.search-results {
-    color: #cccccc;
-    font-size: 12px;
-    margin: 0 8px;
-    min-width: 60px;
-    text-align: center;
-    white-space: nowrap;
 }
