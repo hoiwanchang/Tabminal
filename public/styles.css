@@ -154,6 +154,11 @@
     --app-width: 100%;
 }
 
+/* Fix Monaco Editor Box Sizing Context */
+.monaco-editor, .monaco-editor * {
+    box-sizing: content-box;
+}
+
 html {
     height: 100%;
     width: 100%;
@@ -165,6 +170,7 @@ html {
 
 * {
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
