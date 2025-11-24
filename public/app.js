@@ -1799,6 +1799,11 @@ async function switchToSession(sessionId) {
     session.mainFitAddon.fit();
     session.mainTerm.focus();
     
+    // Double check focus
+    requestAnimationFrame(() => {
+        session.mainTerm.focus();
+    });
+    
     session.reportResize();
     
     // Sync editor state
@@ -1914,6 +1919,9 @@ async function initApp() {
     // If no sessions, create one
     if (state.sessions.size === 0) {
         await createNewSession();
+    } else if (state.activeSessionId) {
+        const session = state.sessions.get(state.activeSessionId);
+        if (session) session.mainTerm.focus();
     }
 }
 
