@@ -2,19 +2,19 @@
 
 /* Monaspace Neon */
 @font-face {
-  font-family: 'Monaspace Neon';
-  src: url('./fonts/MonaspaceNeon-Regular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
+    font-family: 'Monaspace Neon';
+    src: url('./fonts/MonaspaceNeon-Regular.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
 }
 
 @font-face {
-  font-family: 'Monaspace Neon';
-  src: url('./fonts/MonaspaceNeon-Bold.woff2') format('woff2');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
+    font-family: 'Monaspace Neon';
+    src: url('./fonts/MonaspaceNeon-Bold.woff2') format('woff2');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
 }
 
 /* Terminal Search Bar (VS Code Style - Exact Match) */
@@ -26,11 +26,20 @@
     display: flex;
     align-items: center;
     background-color: #252526;
-    height: 33px; /* Exact VS Code height */
-    padding: 0 4px; /* Exact VS Code padding */
-    border-radius: 0 0 4px 4px; /* Rounded bottom */
-    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.36); /* Exact VS Code shadow */
-    border: none; /* VS Code uses shadow, not border */
+    height: 33px;
+    /* Exact VS Code height */
+    padding: 0 4px;
+    /* Exact VS Code padding */
+    border-radius: 0 0 4px 4px;
+    /* Rounded bottom */
+    box-shadow: 0 0 8px 2px rgba(0, 0, 0, 0.36);
+    /* Exact VS Code shadow */
+    border: none;
+    /* VS Code uses shadow, not border */
+}
+
+.terminal-wrapper.maximized .search-bar {
+    top: 0;
 }
 
 .search-bar .search-input-wrapper {
@@ -42,22 +51,27 @@
 
 .search-bar input {
     background-color: #3c3c3c;
-    border: 1px solid transparent; /* Transparent border default */
+    border: 1px solid transparent;
+    /* Transparent border default */
     color: #cccccc;
     font-family: inherit;
     font-size: 13px;
-    height: 23px; /* Exact VS Code input height */
+    height: 23px;
+    /* Exact VS Code input height */
     width: 240px;
-    padding: 3px 6px 0 6px; /* Increase top padding */
+    padding: 3px 6px 0 6px;
+    /* Increase top padding */
     padding-right: 70px;
     outline: none;
     border-radius: 2px;
     box-sizing: border-box;
-    line-height: normal; /* Reset line-height */
+    line-height: normal;
+    /* Reset line-height */
 }
 
 .search-bar input:focus {
-    border-color: #007fd4; /* VS Code Focus Blue */
+    border-color: #007fd4;
+    /* VS Code Focus Blue */
 }
 
 /* Overlay Options inside Input */
@@ -87,16 +101,21 @@
 }
 
 .search-bar .option-btn:hover {
-    background-color: rgba(90, 93, 94, 0.31); /* VS Code hover style */
+    background-color: rgba(90, 93, 94, 0.31);
+    /* VS Code hover style */
 }
 
 .search-bar .option-btn.active {
-    color: #ffffff; /* Active text white */
-    background-color: rgba(0, 127, 212, 0.4); /* VS Code active blue */
+    color: #ffffff;
+    /* Active text white */
+    background-color: rgba(0, 127, 212, 0.4);
+    /* VS Code active blue */
 }
 
 /* Navigation & Close Buttons */
-.search-bar .nav-btn, .search-bar .close-btn, .search-bar .icon-btn {
+.search-bar .nav-btn,
+.search-bar .close-btn,
+.search-bar .icon-btn {
     background: transparent;
     border: none;
     color: #cccccc;
@@ -111,12 +130,15 @@
     padding: 0;
 }
 
-.search-bar .nav-btn:hover, .search-bar .close-btn:hover, .search-bar .icon-btn:hover {
+.search-bar .nav-btn:hover,
+.search-bar .close-btn:hover,
+.search-bar .icon-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
 .search-bar button:disabled {
-    color: #586e75; /* Muted */
+    color: #586e75;
+    /* Muted */
     cursor: default;
     opacity: 0.5;
 }
@@ -129,7 +151,8 @@
     color: #cccccc;
     font-size: 12px;
     margin: 0 8px;
-    width: 80px; /* Fixed width */
+    width: 80px;
+    /* Fixed width */
     min-width: 80px;
     text-align: left;
     white-space: nowrap;
@@ -138,7 +161,8 @@
     height: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding-top: 2px; /* Visual center tweak */
+    padding-top: 2px;
+    /* Visual center tweak */
 }
 
 :root {
@@ -155,7 +179,8 @@
 }
 
 /* Fix Monaco Editor Box Sizing Context */
-.monaco-editor, .monaco-editor * {
+.monaco-editor,
+.monaco-editor * {
     box-sizing: content-box;
 }
 
@@ -202,10 +227,13 @@ body {
 .app-layout {
     display: flex;
     flex-grow: 1;
-    height: 0; /* Allow flex child to scroll */
+    height: 0;
+    /* Allow flex child to scroll */
     width: 100%;
-    min-width: 0; /* Allow shrinking */
-    overflow: hidden; /* Force children to fit */
+    min-width: 0;
+    /* Allow shrinking */
+    overflow: hidden;
+    /* Force children to fit */
     /* border-bottom removed, moved to virtual-keys */
 }
 
@@ -233,15 +261,21 @@ body {
     flex-shrink: 0;
 }
 
-.sidebar-toggle:hover { color: var(--text-highlight); }
+.sidebar-toggle:hover {
+    color: var(--text-highlight);
+}
 
 /* Sidebar Overlay */
 .sidebar-overlay {
     display: none;
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    z-index: 800; /* Below sidebar (900/1000), above content */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 800;
+    /* Below sidebar (900/1000), above content */
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
     transition: opacity 0.3s;
@@ -260,22 +294,24 @@ body {
     .sidebar-toggle {
         display: block;
     }
-    
+
     .sidebar {
         position: absolute;
         left: 0;
         top: 0;
         height: 100%;
-        width: 240px; /* Slightly wider for touch */
+        width: 240px;
+        /* Slightly wider for touch */
         z-index: 900;
-        transform: translateX(-100%); /* Hide off-screen */
+        transform: translateX(-100%);
+        /* Hide off-screen */
         /* Toggle visibility to remove shadow artifact when closed */
         visibility: hidden;
         transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s linear 0.3s;
-        box-shadow: 4px 0 12px rgba(0,0,0,0.5);
+        box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5);
         border-right: 1px solid var(--border-color);
     }
-    
+
     .sidebar.open {
         transform: translateX(0);
         visibility: visible;
@@ -291,13 +327,15 @@ body {
 @media (pointer: coarse) {
     .system-status-bar {
         /* Font size stays 12px (global) */
-        padding-top: max(6px, env(safe-area-inset-top)); /* More breathing room */
+        padding-top: max(6px, env(safe-area-inset-top));
+        /* More breathing room */
         /* padding-bottom is handled by global style now */
     }
 
     .virtual-keys button {
         font-size: 14px;
-        min-width: 40px; /* Slightly wider touch target */
+        min-width: 40px;
+        /* Slightly wider touch target */
     }
 }
 
@@ -307,7 +345,8 @@ body {
     padding: 0;
     flex-grow: 1;
     overflow-y: auto;
-    position: relative; /* Context for sticky */
+    position: relative;
+    /* Context for sticky */
 }
 
 .tab-item {
@@ -318,7 +357,8 @@ body {
     background-color: var(--bg-surface);
     border: 1px solid var(--border-color);
     transition: background-color 0.2s ease, border-color 0.2s ease;
-    overflow: hidden; /* Clip content to rounded corners */
+    overflow: hidden;
+    /* Clip content to rounded corners */
     min-height: 76px;
     display: flex;
     flex-direction: column;
@@ -330,11 +370,14 @@ body {
 .new-tab-item {
     position: sticky;
     bottom: 0;
-    background-color: var(--bg-base); /* Match sidebar bg to hide content behind */
+    background-color: var(--bg-base);
+    /* Match sidebar bg to hide content behind */
     padding-top: 8px;
-    padding-bottom: 10px; /* Add some bottom padding */
+    padding-bottom: 10px;
+    /* Add some bottom padding */
     z-index: 100;
-    margin-top: auto; /* Push to bottom if flex container? No, sticky handles it. */
+    margin-top: auto;
+    /* Push to bottom if flex container? No, sticky handles it. */
 }
 
 .new-tab-button {
@@ -363,7 +406,8 @@ body {
 }
 
 .tab-item:hover .tab-info-overlay {
-    transform: translateY(100%); /* Slide down out of view */
+    transform: translateY(100%);
+    /* Slide down out of view */
 }
 
 /* Disable slide on mobile since there is no preview underneath */
@@ -386,12 +430,16 @@ body {
 .close-tab-button {
     position: absolute;
     top: 4px;
-    left: 4px; /* Left side */
+    left: 4px;
+    /* Left side */
     right: auto;
-    width: 28px; /* Same size as toggle btn */
+    width: 28px;
+    /* Same size as toggle btn */
     height: 28px;
-    border-radius: 4px; /* Square with rounded corners */
-    background-color: rgba(0, 0, 0, 0.6); /* Darker for visibility */
+    border-radius: 4px;
+    /* Square with rounded corners */
+    background-color: rgba(0, 0, 0, 0.6);
+    /* Darker for visibility */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
@@ -409,7 +457,8 @@ body {
 }
 
 .close-tab-button:hover {
-    background-color: rgba(220, 50, 47, 0.8); /* Red hover */
+    background-color: rgba(220, 50, 47, 0.8);
+    /* Red hover */
     border-color: rgba(220, 50, 47, 1);
     color: white;
     opacity: 1;
@@ -436,13 +485,15 @@ body {
 }
 
 .preview-container .xterm-viewport {
-    overflow: hidden !important; /* Hide scrollbars in preview */
+    overflow: hidden !important;
+    /* Hide scrollbars in preview */
 }
 
 /* Scale the preview terminal to fit */
 .preview-terminal-wrapper {
     transform-origin: top left;
-    pointer-events: none; /* Disable interaction, allow clicks to pass through */
+    pointer-events: none;
+    /* Disable interaction, allow clicks to pass through */
 }
 
 .tab-info-overlay {
@@ -451,14 +502,18 @@ body {
     left: 0;
     width: 100%;
     padding: 6px 8px;
-    background: rgba(0, 43, 54, 0.75); /* Semi-transparent background */
-    backdrop-filter: blur(4px); /* Frosted glass effect */
+    background: rgba(0, 43, 54, 0.75);
+    /* Semi-transparent background */
+    backdrop-filter: blur(4px);
+    /* Frosted glass effect */
     border-top: 1px solid rgba(88, 110, 117, 0.3);
-    pointer-events: none; /* Allow clicks to pass through */
+    pointer-events: none;
+    /* Allow clicks to pass through */
     display: flex;
     flex-direction: column;
     gap: 2px;
-    transition: transform 0.3s ease; /* Smooth slide transition */
+    transition: transform 0.3s ease;
+    /* Smooth slide transition */
 }
 
 /* Overlay hover logic moved to main media query block */
@@ -505,26 +560,34 @@ body {
     padding: 0;
     display: flex;
     flex-direction: column;
-    min-width: 0; /* Allow shrinking */
-    overflow: hidden; /* Force children to fit */
+    min-width: 0;
+    /* Allow shrinking */
+    overflow: hidden;
+    /* Force children to fit */
 }
 
 .system-status-bar {
     display: flex;
-    gap: 0; /* Remove default gap, control via child containers */
-    padding: 0 8px; /* Reduce padding slightly */
-    padding-top: max(6px, env(safe-area-inset-top)); /* Balanced top padding */
-    padding-bottom: 6px; /* Balanced bottom padding */
+    gap: 0;
+    /* Remove default gap, control via child containers */
+    padding: 0 8px;
+    /* Reduce padding slightly */
+    padding-top: max(6px, env(safe-area-inset-top));
+    /* Balanced top padding */
+    padding-bottom: 6px;
+    /* Balanced bottom padding */
     padding-left: max(8px, env(safe-area-inset-left));
     padding-right: max(8px, env(safe-area-inset-right));
     background-color: rgba(0, 43, 54, 0.9);
     border-bottom: 1px solid var(--border-color);
-    font-size: 12px; /* Unified font size */
+    font-size: 12px;
+    /* Unified font size */
     color: var(--text-muted);
     flex-shrink: 0;
     align-items: center;
     width: 100%;
-    overflow: hidden; /* Prevent scrollbar if canvas is added */
+    overflow: hidden;
+    /* Prevent scrollbar if canvas is added */
 }
 
 .status-text-group {
@@ -538,9 +601,11 @@ body {
 
 .desktop-heartbeat-canvas {
     flex-grow: 1;
-    height: 12px; /* Match 12px text height perfectly */
+    height: 12px;
+    /* Match 12px text height perfectly */
     min-width: 50px;
-    display: none; /* Managed by JS */
+    display: none;
+    /* Managed by JS */
     opacity: 1;
     margin-left: 5px;
     align-self: center;
@@ -588,7 +653,8 @@ body {
     height: 100%;
     flex-grow: 1;
     touch-action: none;
-    overflow: hidden; /* Ensure xterm canvas doesn't overflow */
+    overflow: hidden;
+    /* Ensure xterm canvas doesn't overflow */
     /* margin-top removed since we have padding now */
 }
 
@@ -597,36 +663,37 @@ body {
     height: 38px;
     background-color: var(--bg-surface);
     border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color); /* The main bottom divider */
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        /* Default safe area padding (Mobile) */
-        padding-top: 0;
-        padding-bottom: 0;
-        padding-left: max(10px, env(safe-area-inset-left));
-        padding-right: max(10px, env(safe-area-inset-right));
-        gap: 6px;
-        overflow-x: auto;
-        flex-shrink: 0;
-        z-index: 20;
-        /* Hide scrollbar */
-        scrollbar-width: none;
+    border-bottom: 1px solid var(--border-color);
+    /* The main bottom divider */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /* Default safe area padding (Mobile) */
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    gap: 6px;
+    overflow-x: auto;
+    flex-shrink: 0;
+    z-index: 20;
+    /* Hide scrollbar */
+    scrollbar-width: none;
+}
+
+.virtual-keys::-webkit-scrollbar {
+    display: none;
+}
+
+/* Larger padding for Tablet/Desktop */
+@media (min-width: 768px) {
+    .virtual-keys {
+        padding-left: max(40px, env(safe-area-inset-left));
+        padding-right: max(40px, env(safe-area-inset-right));
     }
-    
-    .virtual-keys::-webkit-scrollbar {
-        display: none;
-    }
-    
-    /* Larger padding for Tablet/Desktop */
-    @media (min-width: 768px) {
-        .virtual-keys {
-            padding-left: max(40px, env(safe-area-inset-left));
-            padding-right: max(40px, env(safe-area-inset-right));
-        }
-    }
-    
-    /* Only show on touch devices */
+}
+
+/* Only show on touch devices */
 @media (pointer: coarse) {
     .virtual-keys {
         display: flex !important;
@@ -686,7 +753,8 @@ body {
 
 .soft-keyboard .row {
     display: flex;
-    justify-content: center; /* Center rows */
+    justify-content: center;
+    /* Center rows */
     gap: 2px;
     padding: 0 2px;
 }
@@ -695,17 +763,20 @@ body {
 
 .soft-key {
     flex: 0 0 calc((100% - 24px) / 12);
-    height: 40px; /* Taller for 2 chars */
-    background: rgba(255,255,255,0.1);
+    height: 40px;
+    /* Taller for 2 chars */
+    background: rgba(255, 255, 255, 0.1);
     border-radius: 6px;
     color: var(--text-highlight);
-    position: relative; /* For absolute positioning */
+    position: relative;
+    /* For absolute positioning */
     min-width: 0;
 }
 
 .key-main {
     position: absolute;
-    top: 4px; left: 5px;
+    top: 4px;
+    left: 5px;
     font-size: 14px;
     font-weight: bold;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -714,9 +785,10 @@ body {
 
 .key-shift {
     position: absolute;
-    bottom: 4px; right: 5px;
+    bottom: 4px;
+    right: 5px;
     font-size: 10px;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     font-weight: normal;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1;
@@ -730,24 +802,31 @@ body {
 
 .soft-keyboard.shift-mode .key-shift {
     opacity: 1;
-    color: var(--accent-color); /* Highlight shift char */
+    color: var(--accent-color);
+    /* Highlight shift char */
     font-size: 14px;
     font-weight: bold;
-    transform: scale(1.3) translate(-2px, -2px); /* Pop out */
+    transform: scale(1.3) translate(-2px, -2px);
+    /* Pop out */
 }
 
-.modifier-key.active, .soft-key.active {
+.modifier-key.active,
+.soft-key.active {
     background: var(--accent-color);
     color: white;
     border-color: var(--accent-color);
 }
+
 /* Override color in active state */
-.soft-key.active .key-shift { color: rgba(255,255,255,0.8); }
+.soft-key.active .key-shift {
+    color: rgba(255, 255, 255, 0.8);
+}
 
 /* Adjust terminal container to accommodate keys */
 .terminal-container {
     /* ... existing ... */
 }
+
 .modal {
     position: fixed;
     z-index: 1000;
@@ -825,15 +904,18 @@ body {
 
 /* Shortcuts Modal Specifics */
 #shortcuts-modal {
-    background-color: rgba(0, 0, 0, 0.2); /* Subtle dimming only */
+    background-color: rgba(0, 0, 0, 0.2);
+    /* Subtle dimming only */
     backdrop-filter: none;
 }
 
 .shortcuts-content {
     max-width: 500px;
     text-align: left;
-    background-color: rgba(0, 43, 54, 0.85); /* Semi-transparent base */
-    backdrop-filter: blur(12px); /* Strong blur on the panel itself */
+    background-color: rgba(0, 43, 54, 0.85);
+    /* Semi-transparent base */
+    backdrop-filter: blur(12px);
+    /* Strong blur on the panel itself */
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 12px;
@@ -869,25 +951,29 @@ kbd {
     font-family: 'Monaspace Neon', monospace;
     font-size: 0.85em;
     color: var(--text-highlight);
-    box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 /* Editor & Split View Styles */
 
 .terminal-wrapper {
-    flex: 1 1 0%; /* Strictly 1 part */
+    flex: 1 1 0%;
+    /* Strictly 1 part */
     position: relative;
     display: flex;
     flex-direction: column;
     min-height: 0;
     width: 100%;
-    min-width: 0; /* Prevent overflow */
-    overflow: visible; /* Allow search bar to protrude */
+    min-width: 0;
+    /* Prevent overflow */
+    overflow: visible;
+    /* Allow search bar to protrude */
     background-color: #002b36;
     /* Padding ensures terminal text doesn't touch edges */
     padding: 0 0 10px 10px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
-    z-index: 5; /* Lower than editor */
+    z-index: 5;
+    /* Lower than editor */
 }
 
 .terminal-wrapper.maximized {
@@ -895,15 +981,18 @@ kbd {
 }
 
 .editor-pane {
-    flex: 2 1 0%; /* Strictly 2 parts */
+    flex: 2 1 0%;
+    /* Strictly 2 parts */
     display: flex;
     flex-direction: column;
     background-color: var(--bg-base);
     min-height: 100px;
-    min-width: 0; /* Prevent overflow */
+    min-width: 0;
+    /* Prevent overflow */
     position: relative;
     overflow: hidden;
-    z-index: 10; /* Higher than terminal */
+    z-index: 10;
+    /* Higher than terminal */
 }
 
 .editor-resizer {
@@ -912,7 +1001,8 @@ kbd {
     cursor: row-resize;
     width: 100%;
     flex-shrink: 0;
-    z-index: 20; /* Highest */
+    z-index: 20;
+    /* Highest */
     position: relative;
     display: flex;
     align-items: flex-start;
@@ -935,7 +1025,8 @@ kbd {
 .editor-layout {
     display: flex;
     flex-grow: 1;
-    height: 0; /* Allow scrolling */
+    height: 0;
+    /* Allow scrolling */
 }
 
 .file-tree-container {
@@ -963,19 +1054,22 @@ kbd {
 
 .file-tree {
     flex-grow: 1;
-    overflow: auto; /* Allow both scroll */
+    overflow: auto;
+    /* Allow both scroll */
     padding: 8px 0;
     font-size: 12px;
 }
 
 .file-tree ul {
     list-style: none;
-    padding-left: 14px; /* Indentation for nested levels */
+    padding-left: 14px;
+    /* Indentation for nested levels */
     margin: 0;
 }
 
-.file-tree > ul {
-    padding-left: 0; /* No indentation for root level */
+.file-tree>ul {
+    padding-left: 0;
+    /* No indentation for root level */
 }
 
 .file-tree li {
@@ -991,8 +1085,10 @@ kbd {
     gap: 6px;
     color: var(--text-base);
     white-space: nowrap;
-    min-width: 100%; /* Ensure background covers full width */
-    width: fit-content; /* Allow width to grow */
+    min-width: 100%;
+    /* Ensure background covers full width */
+    width: fit-content;
+    /* Allow width to grow */
 }
 
 .file-tree-item:hover {
@@ -1029,7 +1125,8 @@ kbd {
     display: flex;
     flex-direction: column;
     background-color: var(--bg-base);
-    min-width: 0; /* Prevent flex overflow */
+    min-width: 0;
+    /* Prevent flex overflow */
 }
 
 .editor-tabs {
@@ -1089,13 +1186,11 @@ kbd {
 }
 
 .editor-tab.readonly {
-    background-image: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 5px,
-        rgba(220, 50, 47, 0.15) 5px,
-        rgba(220, 50, 47, 0.15) 10px
-    );
+    background-image: repeating-linear-gradient(-45deg,
+            transparent,
+            transparent 5px,
+            rgba(220, 50, 47, 0.15) 5px,
+            rgba(220, 50, 47, 0.15) 10px);
 }
 
 .editor-tab.readonly span {
@@ -1138,7 +1233,7 @@ kbd {
     max-width: 95%;
     max-height: 95%;
     object-fit: contain;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
 }
 
 .empty-editor-state {
@@ -1155,20 +1250,26 @@ kbd {
 .toggle-editor-btn {
     position: absolute;
     top: 4px;
-    right: 4px; /* Fixed right */
-    width: 28px; /* Larger touch target */
+    right: 4px;
+    /* Fixed right */
+    width: 28px;
+    /* Larger touch target */
     height: 28px;
-    border-radius: 4px; /* Square with rounded corners */
-    background-color: rgba(0, 0, 0, 0.6); /* Darker for visibility */
+    border-radius: 4px;
+    /* Square with rounded corners */
+    background-color: rgba(0, 0, 0, 0.6);
+    /* Darker for visibility */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     color: var(--text-highlight);
-    border: 1px solid rgba(255, 255, 255, 0.2); /* Stronger border */
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Stronger border */
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    opacity: 0; /* Default Hidden */
+    opacity: 0;
+    /* Default Hidden */
     transition: all 0.2s ease;
     z-index: 10;
     font-size: 14px;
@@ -1178,7 +1279,8 @@ kbd {
 
 /* Show when hovering the tab */
 .tab-item:hover .toggle-editor-btn {
-    opacity: 1; /* Fully visible on hover */
+    opacity: 1;
+    /* Fully visible on hover */
 }
 
 /* Hovering the button itself */
@@ -1190,7 +1292,8 @@ kbd {
 /* Active/Pinned State (Editor is Open) */
 .tab-item.editor-open .toggle-editor-btn {
     opacity: 1;
-    background-color: rgba(38, 139, 210, 0.5); /* Stronger blue */
+    background-color: rgba(38, 139, 210, 0.5);
+    /* Stronger blue */
     border-color: rgba(38, 139, 210, 0.8);
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
     color: white;
@@ -1198,8 +1301,10 @@ kbd {
 
 /* Show on active tab (for mobile discoverability) */
 .tab-item.active .toggle-editor-btn {
-    opacity: 1; /* Always visible on active tab */
+    opacity: 1;
+    /* Always visible on active tab */
 }
+
 .tab-item.active:hover .toggle-editor-btn {
     opacity: 0.8;
 }
@@ -1222,14 +1327,16 @@ kbd {
 }
 
 .tab-item:not(.active) .tab-file-tree {
-    max-height: 65px; /* Approx 3 items */
+    max-height: 65px;
+    /* Approx 3 items */
     pointer-events: none;
     opacity: 0.6;
     overflow: hidden;
 }
 
 .tab-item.active .tab-file-tree {
-    max-height: 600px; /* Approx 30 items */
+    max-height: 600px;
+    /* Approx 30 items */
     pointer-events: auto;
     opacity: 1;
     overflow: auto;
@@ -1245,7 +1352,7 @@ kbd {
     margin: 0;
 }
 
-.tab-file-tree > ul {
+.tab-file-tree>ul {
     padding-left: 0;
 }
 
@@ -1256,9 +1363,20 @@ kbd {
 
 /* Heartbeat Animation */
 @keyframes heartbeat-pulse {
-    0% { transform: scale(0.8); opacity: 0.6; }
-    50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(0.8); opacity: 0.6; }
+    0% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(0.8);
+        opacity: 0.6;
+    }
 }
 
 .heartbeat-dot {
@@ -1275,7 +1393,8 @@ kbd {
 /* Toast Notifications */
 .notification-container {
     position: fixed;
-    top: calc(env(safe-area-inset-top) + 40px); /* Move down to avoid status bar */
+    top: calc(env(safe-area-inset-top) + 40px);
+    /* Move down to avoid status bar */
     right: 10px;
     z-index: 2000;
     display: flex;
@@ -1289,7 +1408,8 @@ kbd {
     bottom: 0;
     left: 0;
     width: 100%;
-    height: max(env(safe-area-inset-bottom, 0px), 60px); /* Taller area */
+    height: max(env(safe-area-inset-bottom, 0px), 60px);
+    /* Taller area */
     z-index: 100;
     pointer-events: none;
     opacity: 0.5;
@@ -1305,7 +1425,7 @@ kbd {
     border-left: 4px solid var(--accent-color);
     padding: 12px;
     border-radius: 4px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     width: 250px;
     pointer-events: auto;
     display: flex;
@@ -1317,16 +1437,26 @@ kbd {
     animation: toast-slide-in 0.5s forwards;
     transition: opacity 0.5s, transform 0.5s, max-height 0.5s, margin-bottom 0.5s, padding 0.5s;
     overflow: hidden;
-    max-height: 0; /* Start collapsed */
+    max-height: 0;
+    /* Start collapsed */
 }
 
-.toast.error { border-left-color: #dc322f; }
-.toast.success { border-left-color: #859900; }
-.toast.warning { border-left-color: #b58900; }
+.toast.error {
+    border-left-color: #dc322f;
+}
+
+.toast.success {
+    border-left-color: #859900;
+}
+
+.toast.warning {
+    border-left-color: #b58900;
+}
 
 .toast-content {
     flex-grow: 1;
-    min-width: 0; /* Allow text wrap */
+    min-width: 0;
+    /* Allow text wrap */
 }
 
 .toast-title {
@@ -1353,7 +1483,9 @@ kbd {
     flex-shrink: 0;
 }
 
-.toast-close:hover { color: var(--text-highlight); }
+.toast-close:hover {
+    color: var(--text-highlight);
+}
 
 .toast.hiding {
     animation: toast-slide-out 0.5s forwards;
@@ -1368,6 +1500,7 @@ kbd {
         padding-top: 0;
         padding-bottom: 0;
     }
+
     100% {
         opacity: 1;
         transform: translateY(0);
@@ -1388,6 +1521,7 @@ kbd {
         padding-bottom: 12px;
         border-width: 1px;
     }
+
     60% {
         opacity: 0;
         transform: translateX(20px);
@@ -1397,6 +1531,7 @@ kbd {
         padding-bottom: 12px;
         border-width: 1px;
     }
+
     100% {
         opacity: 0;
         transform: translateX(20px);
@@ -1404,13 +1539,25 @@ kbd {
         margin-bottom: 0;
         padding-top: 0;
         padding-bottom: 0;
-/* Landscape Optimization for Mobile */
-@media (orientation: landscape) and (max-height: 600px) {
-    .soft-key {
-        height: 22px !important;
-        font-size: 11px;
+
+        /* Landscape Optimization for Mobile */
+        @media (orientation: landscape) and (max-height: 600px) {
+            .soft-key {
+                height: 22px !important;
+                font-size: 11px;
+            }
+
+            /* Adjust internal labels */
+            .key-main {
+                top: 0px;
+                left: 4px;
+                font-size: 11px;
+            }
+
+            .key-shift {
+                bottom: 0px;
+                right: 4px;
+                font-size: 8px;
+            }
+        }
     }
-    /* Adjust internal labels */
-    .key-main { top: 0px; left: 4px; font-size: 11px; }
-    .key-shift { bottom: 0px; right: 4px; font-size: 8px; }
-}}
