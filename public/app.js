@@ -2160,6 +2160,7 @@ const searchResults = document.getElementById('search-results');
 const searchCaseBtn = document.getElementById('search-case');
 const searchWordBtn = document.getElementById('search-word');
 const searchRegexBtn = document.getElementById('search-regex');
+const searchToggleBtn = document.getElementById('search-toggle-replace');
 
 let searchOptions = {
     caseSensitive: false,

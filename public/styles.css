@@ -45,11 +45,11 @@
     border: 1px solid #3c3c3c;
     color: #cccccc;
     font-family: inherit;
-    font-size: 13px;
+    font-size: 12px; /* Smaller font */
     height: 26px;
     width: 240px;
     padding: 0 6px;
-    padding-right: 70px; /* Reserve space for overlay buttons */
+    padding-right: 70px;
     outline: none;
     border-radius: 2px;
     box-sizing: border-box;
@@ -72,7 +72,7 @@
 .search-bar .option-btn {
     background: transparent;
     border: none;
-    color: #858585;
+    color: #c5c5c5; /* Brighter gray */
     width: 20px;
     height: 20px;
     border-radius: 3px;
@@ -95,7 +95,7 @@
 }
 
 /* Navigation & Close Buttons */
-.search-bar .nav-btn, .search-bar .close-btn {
+.search-bar .nav-btn, .search-bar .close-btn, .search-bar .icon-btn {
     background: transparent;
     border: none;
     color: #cccccc;
@@ -106,17 +106,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px; /* Smaller arrows (was 16) */
     padding: 0;
 }
 
-.search-bar .nav-btn:hover, .search-bar .close-btn:hover {
+.search-bar .nav-btn:hover, .search-bar .close-btn:hover, .search-bar .icon-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
 .search-bar .search-results {
     color: #cccccc;
-    font-size: 12px;
+    font-size: 11px; /* Smaller font */
     margin: 0 8px;
     min-width: 60px;
     text-align: center;
