@@ -1275,6 +1275,9 @@ kbd {
         font-size: 11px;
     }
     /* Adjust internal labels */
+    .key-main { top: 0px; left: 4px; font-size: 11px; }
+    .key-shift { bottom: 0px; right: 4px; font-size: 8px; }
+}
 /* Terminal Search Bar (VS Code Style) */
 .search-bar {
     position: absolute;
