@@ -724,7 +724,7 @@ class Session {
             convertEol: true,
             cursorBlink: true,
             fontFamily: "'Monaspace Neon', \"SF Mono Terminal\", \"SFMono-Regular\", \"SF Mono\", \"JetBrains Mono\", Menlo, Consolas, monospace",
-            fontSize: window.innerWidth < 768 ? 14 : 12,
+            fontSize: IS_MOBILE ? 14 : 12,
             rows: this.rows,
             cols: this.cols,
             theme: { background: '#002b36', foreground: '#839496', cursor: '#93a1a1', cursorAccent: '#002b36', selectionBackground: '#073642' }
@@ -2156,19 +2156,59 @@ const searchInput = document.getElementById('search-input');
 const searchNext = document.getElementById('search-next');
 const searchPrev = document.getElementById('search-prev');
 const searchClose = document.getElementById('search-close');
+const searchResults = document.getElementById('search-results');
+const searchCaseBtn = document.getElementById('search-case');
+const searchWordBtn = document.getElementById('search-word');
+const searchRegexBtn = document.getElementById('search-regex');
+
+let searchOptions = {
+    caseSensitive: false,
+    wholeWord: false,
+    regex: false
+};
 
 if (searchBar) {
     const doSearch = (forward = true) => {
         if (!state.activeSessionId || !state.sessions.has(state.activeSessionId)) return;
         const addon = state.sessions.get(state.activeSessionId).searchAddon;
         const term = searchInput.value;
-        if (forward) addon.findNext(term);
-        else addon.findPrevious(term);
+        
+        let found = false;
+        if (forward) found = addon.findNext(term, searchOptions);
+        else found = addon.findPrevious(term, searchOptions);
+        
+        if (!found && term.length > 0) {
+            searchResults.textContent = 'No results';
+        } else {
+            searchResults.textContent = '';
+        }
     };
+
+    const toggleOption = (btn, key) => {
+        searchOptions[key] = !searchOptions[key];
+        btn.classList.toggle('active', searchOptions[key]);
+        // Re-trigger search to apply option
+        if (searchInput.value) doSearch(true);
+    };
+
+    if (searchCaseBtn) searchCaseBtn.onclick = () => toggleOption(searchCaseBtn, 'caseSensitive');
+    if (searchWordBtn) searchWordBtn.onclick = () => toggleOption(searchWordBtn, 'wholeWord');
+    if (searchRegexBtn) searchRegexBtn.onclick = () => toggleOption(searchRegexBtn, 'regex');
 
     searchInput.addEventListener('input', (e) => {
         if (!state.activeSessionId) return;
-        state.sessions.get(state.activeSessionId).searchAddon.findNext(e.target.value, { incremental: true });
+        const term = e.target.value;
+        // Incremental search
+        const found = state.sessions.get(state.activeSessionId).searchAddon.findNext(term, { 
+            incremental: true, 
+            ...searchOptions 
+        });
+        
+        if (!found && term.length > 0) {
+            searchResults.textContent = 'No results';
+        } else {
+            searchResults.textContent = '';
+        }
     });
     
     searchInput.addEventListener('keydown', (e) => {
@@ -2196,6 +2236,11 @@ if (searchBar) {
 document.addEventListener('keydown', (e) => {
     // Ctrl+F or Cmd+F for Search
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        // If editor has focus, let Monaco handle it
+        if (editorManager && editorManager.editor && editorManager.editor.hasTextFocus()) {
+            return;
+        }
+
         e.preventDefault();
         if (searchBar) {
             searchBar.style.display = 'flex';
