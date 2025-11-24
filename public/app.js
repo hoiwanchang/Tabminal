@@ -2169,6 +2169,18 @@ let searchOptions = {
 };
 
 if (searchBar) {
+    const updateUI = (found) => {
+        if (!found) {
+            searchResults.textContent = 'No results';
+            searchNext.disabled = true;
+            searchPrev.disabled = true;
+        } else {
+            searchResults.textContent = 'Found';
+            searchNext.disabled = false;
+            searchPrev.disabled = false;
+        }
+    };
+
     const doSearch = (forward = true) => {
         if (!state.activeSessionId || !state.sessions.has(state.activeSessionId)) return;
         const addon = state.sessions.get(state.activeSessionId).searchAddon;
@@ -2178,18 +2190,12 @@ if (searchBar) {
         if (forward) found = addon.findNext(term, searchOptions);
         else found = addon.findPrevious(term, searchOptions);
         
-        if (!found) {
-            searchResults.textContent = 'No results';
-        } else {
-            searchResults.textContent = '';
-        }
+        updateUI(found);
     };
 
     const toggleOption = (btn, key) => {
         searchOptions[key] = !searchOptions[key];
         btn.classList.toggle('active', searchOptions[key]);
-        // Re-trigger search to apply option
-        // if (searchInput.value) doSearch(true); // Always trigger?
         doSearch(true);
     };
 
@@ -2197,20 +2203,28 @@ if (searchBar) {
     if (searchWordBtn) searchWordBtn.onclick = () => toggleOption(searchWordBtn, 'wholeWord');
     if (searchRegexBtn) searchRegexBtn.onclick = () => toggleOption(searchRegexBtn, 'regex');
 
+    // Initial State
+    searchNext.disabled = true;
+    searchPrev.disabled = true;
+
     searchInput.addEventListener('input', (e) => {
         if (!state.activeSessionId) return;
         const term = e.target.value;
+        if (!term) {
+            updateUI(false);
+            searchResults.textContent = ''; // Empty when clear? Or No results? VS Code clears. 
+            // But user asked for "No results always".
+            // My updateUI sets 'No results'.
+            return;
+        }
+        
         // Incremental search
         const found = state.sessions.get(state.activeSessionId).searchAddon.findNext(term, { 
             incremental: true, 
             ...searchOptions 
         });
         
-        if (!found) {
-            searchResults.textContent = 'No results';
-        } else {
-            searchResults.textContent = '';
-        }
+        updateUI(found);
     });
     
     searchInput.addEventListener('keydown', (e) => {

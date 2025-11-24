@@ -45,7 +45,7 @@
     border: 1px solid transparent; /* Transparent border default */
     color: #cccccc;
     font-family: inherit;
-    font-size: 13px; /* Exact VS Code input height */
+    font-size: 13px;
     height: 23px; /* Exact VS Code input height */
     width: 240px;
     padding: 0 6px;
@@ -53,6 +53,7 @@
     outline: none;
     border-radius: 2px;
     box-sizing: border-box;
+    line-height: 21px; /* Fix vertical alignment (height - borders) */
 }
 
 .search-bar input:focus {
@@ -82,16 +83,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px; /* Codicon size */
+    font-size: 16px;
 }
 
 .search-bar .option-btn:hover {
-    background-color: rgba(90, 93, 94, 0.31);
+    background-color: rgba(90, 93, 94, 0.31); /* VS Code hover style */
 }
 
 .search-bar .option-btn.active {
-    color: #ffffff;
-    background-color: rgba(0, 127, 212, 0.4);
+    color: #ffffff; /* Active text white */
+    background-color: rgba(0, 127, 212, 0.4); /* VS Code active blue */
 }
 
 /* Navigation & Close Buttons */
@@ -106,7 +107,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px; /* Codicon size */
+    font-size: 16px;
     padding: 0;
 }
 
@@ -114,13 +115,29 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+.search-bar button:disabled {
+    color: #586e75; /* Muted */
+    cursor: default;
+    opacity: 0.5;
+}
+
+.search-bar button:disabled:hover {
+    background-color: transparent;
+}
+
 .search-bar .search-results {
     color: #cccccc;
     font-size: 12px;
     margin: 0 8px;
-    min-width: 60px;
-    text-align: center;
+    width: 80px; /* Fixed width */
+    min-width: 80px;
+    text-align: left;
     white-space: nowrap;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 :root {
