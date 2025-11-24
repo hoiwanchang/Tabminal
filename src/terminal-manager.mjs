@@ -43,7 +43,7 @@ export class TerminalManager {
         // Use CWD from options if present, otherwise default
         const initialCwd = (restoredData && restoredData.cwd) 
             ? restoredData.cwd 
-            : (process.env.TABMINAL_CWD || process.cwd());
+            : (process.env.TABMINAL_CWD || os.homedir());
         
         const env = { ...process.env };
         
