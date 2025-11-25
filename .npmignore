@@ -1,18 +1,21 @@
 # Development & Testing
-test/
-tests/
-.history/
 .git/
 .github/
+.history/
 .vscode/
+scripts/
+test/
+tests/
 
 # Configuration & Secrets
-config.json
 .env*
-.DS_Store
+config.json
 
 # Logs & Temp
-logs/
 *.log
 *.pid
+logs/
 npm-debug.log*
+
+# Garbage
+.DS_Store
