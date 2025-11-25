@@ -9,6 +9,8 @@
 
 Tabminal bridges the gap between traditional CLI tools and modern AI capabilities, all while solving the UX challenges of coding on mobile devices.
 
+<img width="1085" height="1256" alt="Screenshot 2025-11-24 at 10 12 09 PM" src="https://github.com/user-attachments/assets/b1042318-0bb3-4512-ac86-15d9420e4009" />
+
 <details>
 
 <summary>📷 More screenshots</summary>
