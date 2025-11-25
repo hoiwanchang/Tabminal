@@ -10,6 +10,8 @@
 
 Tabminal bridges the gap between traditional CLI tools and modern AI capabilities, all while solving the UX challenges of coding on desktop and mobile devices.
 
+As a long-time terminal user who frequently needs to step away from my computer while maintaining my workflow, and considering the various scalability issues of traditional terminals alongside the irreversible trend of vibe-coding, I reconsidered a solution that would first serve my own needs. Then, it would serve others whose workflows happen to be similar to mine. So, while waiting for AI to write code for the company, I tried to vibe a terminal from scratch that could meet my daily work needs and that I would enjoy using. As a result, I intermittently wrote this project. I believe this project is not for everyone. However, it is especially suitable for CLI and AI enthusiasts, which is the core motivation behind this project's creation.
+
 ## ✨ Innovative Designs
 
 - `Server-side session persistence` ensures your sessions with the AI agent are maintained, allowing you to pick up where you left off at any time.
@@ -43,8 +45,7 @@ Powered by **modern AI models** (via OpenRouter), Tabminal understands your cont
 
 ### 📱 Ultimate Mobile Experience
 Built from the ground up for **iPadOS** and **iOS**.
-*   **HHKB Virtual Keyboard**: A specialized software keyboard overlay with `CTRL`, `ALT`, `TAB`, and arrow keys.
-    *   **Smart Modifiers**: Toggle `SHIFT` for continuous entry.
+*   **HHKB Virtual Keyboard**: You can perform nearly all terminal operations on any device, without being frustrated by os limitations.
 *   **Responsive Layout**: Auto-adapts to landscape/portrait modes, respecting Safe Areas and Notches.
 *   **PWA Ready**: Install to Home Screen for a full-screen, native app feel.
 
