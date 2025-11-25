@@ -32,8 +32,9 @@ Built from the ground up for **iPadOS** and **iOS**.
 ## 🚀 Getting Started
 
 ### Prerequisites
-*   Node.js >= 18
-*   An API Key (OpenRouter / Google AI Studio)
+*   Node.js >= 22
+*   (Optional) An [OpenRouter](https://openrouter.ai/) API Key if you want AI features.
+*   (Optional) A pair of Google API Key and Search Engine ID (CX) for web search capabilities.
 
 ### ⚠️ Security Warning
 Tabminal provides **full read/write access** to the underlying file system.
