@@ -9,6 +9,14 @@
 
 Tabminal bridges the gap between traditional CLI tools and modern AI capabilities, all while solving the UX challenges of coding on mobile devices.
 
+## ✨ Innovative Designs
+
+- `Server-side session persistence` ensures your sessions with the AI agent are maintained, allowing you to pick up where you left off at any time.
+- `Fast and stable connection management` delivers a seamless, agile experience across platforms and devices, with native support for network roaming.
+- Enjoy a comprehensive `Progressive Web App (PWA) experience` anytime, anywhere; all you need is a modern browser to start working.
+- `Proactive AI integration` means your terminal becomes your work context. You can ask questions about your current session at any time, and the AI will automatically retrieve the context to accurately solve problems, even proactively offering assistance when commands fail.
+- `Cloud-native design` enables access via Zero Trust or VPN, providing unprecedented convenience for managing cloud servers. 
+
 <img width="1632" height="1317" alt="Screenshot 2025-11-24 at 10 15 28 PM" src="https://github.com/user-attachments/assets/ad864233-7b22-4b29-8b90-dc81993dd623" />
 
 <details>
