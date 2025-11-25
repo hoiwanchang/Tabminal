@@ -2,7 +2,7 @@
 
 > **Tab(ter)minal, the Cloud-Native, Proactive AI Integrated Terminal works in modern browsers.**
 > Seamlessly code from your desktop, tablet, or phone with an intelligent, persistent, and rich experience.
-> This project was built using Gemini and Codex wich 80% vibe-coding. The real project that `built for the vibe, with the vibe`.
+> This project was built using Gemini and Codex wich 80% vibe-coding, means `built for the vibe, with the vibe`.
 
 ![Tabminal Banner](public/favicon.svg)
 
