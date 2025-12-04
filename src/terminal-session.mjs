@@ -8,7 +8,6 @@ import { config } from './config.mjs';
 const execAsync = promisify(exec);
 const WS_STATE_OPEN = 1;
 const DEFAULT_HISTORY_LIMIT = 512 * 1024; // chars
-const PROMPT_MARKER = '\u001b]1337;TabminalPrompt\u0007';
 const OSC_SEQUENCE_REGEX =
     /\u001b\]1337;(ExitCode=(\d+);CommandB64=([a-zA-Z0-9+/=]+)|TabminalPrompt)\u0007/g;
 const CSI_SEQUENCE_REGEX = /\u001b\[[0-9;?]*[ -\/]*[@-~]/g;
@@ -31,16 +30,16 @@ export class TerminalSession {
         this.createdAt = options.createdAt ?? new Date();
         this.shell = options.shell;
         this.initialCwd = options.initialCwd;
-        
+
         this.title = this.shell ? this.shell.split('/').pop() : 'Terminal';
         this.cwd = this.initialCwd;
         this.inputBuffer = '';
-        
+
         // Format the initial environment object into a static string
         this.env = Object.entries(options.env || {})
             .map(([key, value]) => `${key}=${value}`)
             .join('\n');
-        
+
         this.editorState = options.editorState || {};
         this.executions = options.executions || [];
 
@@ -136,7 +135,6 @@ export class TerminalSession {
 
         this.dataSubscription = this.pty.onData(this._handleData);
         this.exitSubscription = this.pty.onExit(this._handleExit);
-        
         this.startTitlePolling();
     }
 
@@ -177,14 +175,14 @@ export class TerminalSession {
                         const rawLine = lines.slice(1).join(' ');
                         const cmdAndArgs = (await execAsync(`ps -o args= -p ${currentPid}`)).stdout.trim();
                         const envBlock = rawLine.substring(rawLine.indexOf(cmdAndArgs) + cmdAndArgs.length).trim();
-                        
+
                         const regex = /([A-Z_][A-Z0-9_]*=)/g;
                         const indices = [];
                         let match;
                         while ((match = regex.exec(envBlock)) !== null) {
                             indices.push(match.index);
                         }
-                        
+
                         if (indices.length > 0) {
                             const envs = [];
                             for (let i = 0; i < indices.length; i++) {
@@ -311,7 +309,7 @@ export class TerminalSession {
                 // Ignore prefix if it only contains whitespace or terminal control artifacts (CPR)
                 const idx = this.inputBuffer.indexOf('#');
                 let line = null;
-                
+
                 if (idx !== -1) {
                     const prefix = this.inputBuffer.substring(0, idx);
                     // Allow whitespace, ESC, [, digits, ;, R (typical CPR response)
@@ -319,10 +317,10 @@ export class TerminalSession {
                         line = this.inputBuffer.substring(idx);
                     }
                 }
-                
+
                 if (line) {
                     // --- HIJACK DETECTED ---
-                    
+
                     // 1. Write pending data BEFORE this char to pty
                     if (i > startIndex) {
                         this.pty.write(data.substring(startIndex, i));
@@ -331,13 +329,13 @@ export class TerminalSession {
                     // 2. Execute Hijack Logic
                     const prompt = line.substring(1).trim();
                     this.inputBuffer = ''; // Reset buffer
-                    
+
                     // Send Ctrl+U to pty to clear the visual line (since user typed it)
                     this.pty.write('\x15');
-                    
+
                     // Suppress PTY echo (like the Ctrl+U echo) to prevent race conditions with AI stream
                     this.suppressPtyOutput = true;
-                    
+
                     // Send newline and reset cursor to User (visual only)
                     this._writeToLogAndBroadcast('\r\n\r\x1b[K');
 
@@ -360,7 +358,7 @@ export class TerminalSession {
             }
             // Handle Control Chars (Reset buffer to be safe, except Tab)
             else if (char < ' ' && char !== '\t') {
-                 this.inputBuffer = '';
+                this.inputBuffer = '';
             }
             // Normal Text
             else {
@@ -382,9 +380,9 @@ export class TerminalSession {
             if (entry.command === 'ai' && entry.exitCode === 0 && entry.output) {
                 // Case A: Successful AI Interaction -> Flush pending history into this turn
                 const userContent = (pendingShellHistory ? pendingShellHistory.trim() + '\n\n' : '') + entry.input;
-                
+
                 conversationHistory.push({ request: userContent, response: entry.output });
-                
+
                 pendingShellHistory = ''; // Reset buffer
             } else {
                 // Case B: Shell Command or Failed AI -> Accumulate history
@@ -393,127 +391,58 @@ export class TerminalSession {
                 pendingShellHistory += record + '\n';
             }
         }
-        
+
         return { conversationHistory, pendingShellHistory };
     }
 
-        async _handleAiCommand(prompt, options = {}) {
-
-            // Prevent duplicate logging from shell integration
-
-            this.skipNextShellLog = true;
-
-    
-
-            // Ensure clean line start and set Cyan color (No prefix yet)
-
-            this._writeToLogAndBroadcast('\r\x1b[K\x1b[36m');
-
-            
-
-            // Gather Context (Current Session Only)
-
-            const cleanHistory = (this.executions && this.executions.length > 0) ? this.executions : [];
-
-            
-
-            // Build Context
-
-            const { conversationHistory, pendingShellHistory } = this._buildAiContext(cleanHistory);
-
-            
-
-                    // Construct Current Prompt
-
-            
-
-                    const currentContext = `Recent Shell History:\n${pendingShellHistory}\nEnvironment:\n${this.env}\nCurrent Path: ${this.cwd}`;
-
-            
-
-                    const finalPrompt = `${currentContext}\n\nQuestion: ${prompt}`;
-
-            
-
-                    
-
-            
-
-                    if (config.debug) {
-
-            
-
-                        console.log('[AI Context Build]');
-
-            
-
-                        console.log('History:', JSON.stringify(conversationHistory, null, 2));
-
-            
-
-                        console.log('Current Prompt Preview:', JSON.stringify(finalPrompt, null, 2));
-
-            
-
+    async _handleAiCommand(prompt, options = {}) {
+        // Prevent duplicate logging from shell integration
+        this.skipNextShellLog = true;
+        // Ensure clean line start and set Cyan color (No prefix yet)
+        this._writeToLogAndBroadcast('\r\x1b[K\x1b[36m');
+        // Gather Context (Current Session Only)
+        const cleanHistory = (this.executions && this.executions.length > 0) ? this.executions : [];
+        // Build Context
+        const { conversationHistory, pendingShellHistory } = this._buildAiContext(cleanHistory);
+        // Construct Current Prompt
+        const currentContext = `Recent Shell History:\n${pendingShellHistory}\nEnvironment:\n${this.env}\nCurrent Path: ${this.cwd}`;
+        const finalPrompt = `${currentContext}\n\nQuestion: ${prompt}`;
+        if (config.debug) {
+            console.log('[AI Context Build]');
+            console.log('History:', JSON.stringify(conversationHistory, null, 2));
+            console.log('Current Prompt Preview:', JSON.stringify(finalPrompt, null, 2));
+        }
+        const startTime = new Date();
+        let fullResponse = '';
+        let isFirstChunk = true;
+        try {
+            const streamCallback = (chunk) => {
+                // console.log('Chunk Received:');
+                // console.log(chunk);
+                if (chunk && chunk.text) {
+                    let text = chunk.text;
+                    // Normalize newlines for terminal
+                    text = text.replace(/\n/g, '\r\n');
+                    if (isFirstChunk) {
+                        const prefix = '\n\nTabminal:\n\n';
+                        text = prefix + text;
+                        isFirstChunk = false;
                     }
-
-            
-
-                    
-
-            
-
-                    const startTime = new Date();
-
-            let fullResponse = '';
-
-            let isFirstChunk = true;
-
-            
-
-            try {
-
-                const streamCallback = (chunk) => {
-
-                    if (chunk && chunk.text) {
-
-                        let text = chunk.text;
-
-                        // Normalize newlines for terminal
-
-                        text = text.replace(/\n/g, '\r\n');
-
-                        
-
-                        if (isFirstChunk) {
-
-                            const prefix = '\n\nTabminal:\n\n';
-
-                            text = prefix + text;
-
-                            isFirstChunk = false;
-
-                        }
-
-                        
-
-                        this._writeToLogAndBroadcast(text);
-
-                    }
-
-                };
-
-            const result = await alan.prompt(finalPrompt, { 
+                    this._writeToLogAndBroadcast(text);
+                }
+            };
+            // console.log('Start AI Prompt...');
+            const result = await alan.prompt(finalPrompt, {
                 stream: streamCallback,
                 delta: true,
                 messages: conversationHistory,
                 trimBeginning: true
             });
-            
+
             if (result && result.text) {
                 fullResponse = result.text;
             }
-            
+
             // End color and new line
             this._writeToLogAndBroadcast('\x1b[0m\r\n');
 
@@ -529,7 +458,7 @@ export class TerminalSession {
 
         } catch (e) {
             this._writeToLogAndBroadcast(`\x1b[31mAI Error: ${e.message}\x1b[0m\r\n`);
-            
+
             this._logCommandExecution({
                 command: 'ai',
                 exitCode: 1,
@@ -539,10 +468,10 @@ export class TerminalSession {
                 completedAt: new Date()
             });
         }
-        
+
         // Resume PTY output
         this.suppressPtyOutput = false;
-        
+
         // Restore prompt by sending \r to pty (empty command)
         this.pty.write('\r');
     }
@@ -930,7 +859,7 @@ export class TerminalSession {
             entry.startedAt && entry.completedAt
                 ? entry.completedAt.getTime() - entry.startedAt.getTime()
                 : null;
-        
+
         const record = {
             command: entry.command ?? null,
             exitCode: entry.exitCode ?? null,
