@@ -42,8 +42,8 @@
     "koa-static": "^5.0.0",
     "node-ansiparser": "^2.2.1",
     "node-pty": "^1.0.0",
-    "openai": "^6.9.1",
-    "utilitas": "^2000.3.20",
+    "openai": "^6.10.0",
+    "utilitas": "^2000.3.26",
     "ws": "^8.18.3"
   },
   "repository": {
